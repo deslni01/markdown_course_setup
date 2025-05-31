@@ -61,10 +61,32 @@ def _render_markdown(
 
 
 class FileGenerator:
+    """
+    Class for writing `MarkdownPage` objects to disk.
+
+    This class creates necessary directories and writes the `template` text from the supplied `MarkdownPage` into a file.
+    """
+
     @classmethod
-    def create_markdown_file(cls, markdown_page, out_dir):
-        file_path = out_dir + "/" + markdown_page.filename
-        output_file = Path(file_path)
+    def create_markdown_file(cls, markdown_page: MarkdownPage, out_dir: str) -> None:
+        """
+        Create a Markdown file on disk using the `MarkdownPage` `template`.
+
+        This method creates a path and any necessary directories, and write the `template` to the file.
+
+        Args:
+            markdown_page (MarkdownPage):
+                Any object whose `.filename` is the desired filename, and the `.template` is the markdown-formatted page template to write to the file.
+
+            out_dir (str):
+                The directory path where the file will be created.
+
+        Returns:
+            None
+
+        """
+        file_path: str = out_dir + "/" + markdown_page.filename
+        output_file: Path = Path(file_path)
         output_file.parent.mkdir(parents=True, exist_ok=True)
         with open(output_file, "w") as file:
             file.write(markdown_page.template)
