@@ -6,6 +6,7 @@ import os
 INDEX_PAGE = 0  # for `00-` index pages
 FLASHCARDS_PAGE = 99  # for `99-` flashcard pages`
 
+
 def generate_slug(title: str) -> str:
     """
     Args:
@@ -72,18 +73,17 @@ class FileGenerator:
         """
         Create a Markdown file on disk using the `MarkdownPage` `template`.
 
-        This method creates a path and any necessary directories, and write the `template` to the file.
+        This method creates a path and any necessary directories, and writes the `template` to the file.
 
         Args:
             markdown_page (MarkdownPage):
-                Any object whose `.filename` is the desired filename, and the `.template` is the markdown-formatted page template to write to the file.
+                An object whose `.filename` is the desired filename, and the `.template` is the markdown-formatted page template to write to the file.
 
             out_dir (str):
                 The directory path where the file will be created.
 
         Returns:
             None
-
         """
         file_path: str = out_dir + "/" + markdown_page.filename
         output_file: Path = Path(file_path)
@@ -94,14 +94,27 @@ class FileGenerator:
 
 @dataclass
 class MarkdownPage:
+    """
+    A single markdown document page.
+
+    Attributes:
+        title (str): The page title (used in H1 and in YAML).
+        slug (str): A slugified `title`, used for directory names and Obsidian links.
+        template (str): The markdown text that will make up the file.
+        filename (str): The name of the file, e.g. `00-index.md`.
+    """
+
     title: str
     slug: str
     template: str
     filename: str
-    index: int = 0
 
 
 class Section:
+    """
+    Class representing the section of a course.
+    """
+
     def __init__(self, section_title, course):
         self.slug = generate_slug(section_title)
         self.section_title = section_title
@@ -191,7 +204,6 @@ class Section:
             self.slug,
             self.flashcard_template,
             f"{FLASHCARDS_PAGE}-flashcards_{self.slug}.md",
-            index=FLASHCARDS_PAGE,
         )
 
         course_index_file = MarkdownPage(
@@ -214,7 +226,7 @@ class Section:
 
             slug = generate_slug(sub_section)
             filename = f"{index:02d}-{slug}.md"
-            sub_section = MarkdownPage(sub_section, slug, sub_template, filename, index)
+            sub_section = MarkdownPage(sub_section, slug, sub_template, filename)
             FileGenerator.create_markdown_file(sub_section, outdir)
 
 
@@ -225,7 +237,7 @@ class Course:
         self.course_number = course_number
 
         self.sections = []
-        self.course_template = ''
+        self.course_template = ""
         self.slug = ""
 
     def __str__(self):
@@ -294,14 +306,13 @@ class Course:
         self.course_template = self.generate_course_template()
         self.generate_sections(self.sections)
 
+
 def get_user_input() -> Course:
     """
     Queries the user via the command-line for the `course_number`, `course_title`, and `short_title`.
     Then for each `section`, queries the user for the `section_title` and loops over for `subsection_title` until `CTRL-D`.
     """
-    course_number = input(
-            "Enter the course number (leave blank if no course number): "
-        )
+    course_number = input("Enter the course number (leave blank if no course number): ")
     course_title = input("Enter the course title: ")
     short_title = input("Enter the short-form title (case-sensitive): ")
     course = Course(course_title, short_title, course_number)
