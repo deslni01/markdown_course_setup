@@ -9,6 +9,8 @@ FLASHCARDS_PAGE = 99  # for `99-` flashcard pages`
 
 def generate_slug(title: str) -> str:
     """
+    Converts a title string into a filesystem friendly slug.
+
     Args:
       title (str): The input string to be converted into a slug.
 
@@ -36,13 +38,14 @@ def _render_markdown(
     Generate a markdown-file template, including YAML properties, and a table of contents.
 
     Args:
-      title (str): The title to be used in the YAML properties and the H1 header.
-
-      dates (bool): If the YAML properties should have a dates, adds a `dates` list to the YAML properties.
-
-      table_of_contents (str): The supplied table of contents to render.
-
-      extra (str): Additional markdown to add, defaults to `## Misc.`.
+      title (str):
+        The title to be used in the YAML properties and the H1 header.
+      table_of_contents (str):
+        The supplied table of contents to render.
+      dates (bool):
+        If the YAML properties should have a dates, adds a `dates` list to the YAML properties.
+      extra (str):
+        Additional markdown to add, defaults to `## Misc.`.
 
     Returns:
       str: A markdown template.
@@ -51,7 +54,7 @@ def _render_markdown(
         "---\n"
         f"title: '{title}'\n"
         "tags: []\n"
-        f"{'dates: []' if dates else ''}\n"  # will this work?
+        f"{'dates: []' if dates else ''}\n"
         "---\n"
         f"# {title}\n"
         "## TOC\n"
@@ -78,12 +81,8 @@ class FileGenerator:
         Args:
             markdown_page (MarkdownPage):
                 An object whose `.filename` is the desired filename, and the `.template` is the markdown-formatted page template to write to the file.
-
             out_dir (str):
                 The directory path where the file will be created.
-
-        Returns:
-            None
         """
         file_path: str = out_dir + "/" + markdown_page.filename
         output_file: Path = Path(file_path)
@@ -98,10 +97,14 @@ class MarkdownPage:
     A single markdown document page.
 
     Attributes:
-        title (str): The page title (used in H1 and in YAML).
-        slug (str): A slugified `title`, used for directory names and Obsidian links.
-        template (str): The markdown text that will make up the file.
-        filename (str): The name of the file, e.g. `00-index.md`.
+        title (str):
+            The page title (used in H1 and in YAML).
+        slug (str):
+            A slugified `title`, used for directory names and Obsidian links.
+        template (str):
+            The markdown text that will make up the file.
+        filename (str):
+            The name of the file, e.g. `00-index.md`.
     """
 
     title: str
@@ -115,12 +118,18 @@ class Section:
     Class representing the section of a course.
 
     Attributes:
-        slug (str): A slugified version of the `section_title`, for folder and filename construction.
-        section_title (str): The name of the section title, displayed in H1, TOC, and YAML sections of the markdown file.
-        subsections (list[str]): A list of subsection titles, used to build the TOC.
-        course (Course): The Course object.
-        index (int): Numeric position of the section within the course, to generate the filename and TOC.
-        section_toc (str): A string representing the section index TOC in markdown format.
+        slug (str):
+            A slugified version of the `section_title`, for folder and filename construction.
+        section_title (str):
+            The name of the section title, displayed in H1, TOC, and YAML sections of the markdown file.
+        subsections (list[str]):
+            A list of subsection titles, used to build the TOC.
+        course (Course):
+            The Course object.
+        index (int):
+            Numeric position of the section within the course, to generate the filename and TOC.
+        section_toc (str):
+            A string representing the section index TOC in markdown format.
 
     Methods:
         section_template() -> str:
@@ -156,7 +165,7 @@ class Section:
         Generates a title and passes it to the `_render_markdown()` function to create the `section_template` markdown text on the fly.
 
         Returns:
-            str - Markdown-formatted text for the section index page.
+            str: Markdown-formatted text for the section index page.
         """
         sec_num = f"{self.index:02d}"
 
@@ -169,7 +178,7 @@ class Section:
         Generates a title and a list of `H2` subsection headers (as the `extra` argument) and passes to `_render_markdown()` to create the `flashcard_template` markdown on the fly.
 
         Returns:
-            str - Markdown-formatted text for the section flashcard page, including subsection `H2` headers for each subsection.
+            str: Markdown-formatted text for the section flashcard page, including subsection `H2` headers for each subsection.
         """
         sec_num = f"{self.index:02d}"
 
@@ -193,9 +202,6 @@ class Section:
 
         Args:
             subsection_title (str): The title of the subsection.
-
-        Returns:
-            None
         """
         self.subsections.append(subsection_title)
 
@@ -204,12 +210,13 @@ class Section:
         Loops through the sections, creating the Obsidian-formatted markdown links for each `section`. The `subsections` of the current `section` are also generated and indented.
 
         Args:
-            all_sections (list[Section]): The list of all sections from the instantiated `Course` object.
-
-            course (Course): A reference to the current `Course` object.
+            all_sections (list[Section]):
+                The list of all sections from the instantiated `Course` object.
+            course (Course):
+                A reference to the current `Course` object.
 
         Returns:
-            str - A section table of contents, containing each `section` and only the `subsections` of the current `section`, which are indented.
+            str: A section table of contents, containing each `section` and only the `subsections` of the current `section`, which are indented.
         """
         lines = [
             f"- [[{INDEX_PAGE:02d}-{course.slug}|{course.short_title} - {course.course_title.title()}]]\n"
@@ -252,12 +259,10 @@ class Section:
         - Loops over the list of `subsections` to instantiate MarkdownPage objects and runs `FileGenerator` function to write the files for each `subsection`.
 
         Args:
-            index (int): The `index` of the current section, used to generate the appropriate directory and links.
-
-            course (Course): A reference to the current `Course` instantiation.
-
-        Returns:
-            None
+            index (int):
+                The `index` of the current section, used to generate the appropriate directory and links.
+            course (Course):
+                A reference to the current `Course` instantiation.
         """
         self.index = index  # store section index on the fly
 
@@ -306,9 +311,9 @@ class Section:
 
 class Course:
     """
-    Class representing the contents of a Course. Inside each `Course` is a list of one or more `Sections` - each containing a list of one or more `Subsections`.
+    Represents a `Course` with multiple `Sections` - each containing a list of one or more `Subsections`.
 
-    Arguments:
+    Attributes:
         course_title (str):
             The title of the course.
         short_title (str):
@@ -331,7 +336,6 @@ class Course:
             Loops over the list of `Section` objects to create all directories and files.
         generate_course() -> None:
             Sets up additional fields and triggers the creation of directories and files.
-
     """
 
     course_title: str
@@ -340,7 +344,6 @@ class Course:
     sections: list[Section]
     course_template: str
     slug: str
-
 
     def __init__(self, course_title, short_title, course_number=None):
         self.course_title = course_title
@@ -364,7 +367,7 @@ class Course:
         Generates the `title` and `table_of_contents` for the `course` index file.
 
         Returns:
-            str - Markdown containing the main course YAML information, headers, and a table of contents with each `section` and all `subsections` (indented under their parent `section`).
+            str: Markdown containing the main course YAML information, headers, and a table of contents with each `section` and all `subsections` (indented under their parent `section`).
         """
 
         title = f"{self.short_title} - {self.course_title.title()}"
@@ -407,7 +410,7 @@ class Course:
         Generates the output directory for the course using the `slug` - optionally combined with the `course_number`, if provided.
 
         Returns:
-            str - The directory path for the course, optionally prepended with `course_number`.
+            str: The directory path for the course, optionally prepended with `course_number`.
         """
         if self.course_number:
             return os.path.join(
@@ -422,9 +425,6 @@ class Course:
         Args:
             sections (list[Section]):
                 The list of `Section` objects within the `Course`.
-
-        Returns:
-            None
         """
         for index, section in enumerate(sections, start=1):
             section.generate_dir_and_markdown_files(index, self)
@@ -432,9 +432,6 @@ class Course:
     def generate_course(self) -> None:
         """
         Sets up course fields for `slug` and `course_template`, then calls `generate_sections()` to create the files.
-
-        Returns:
-            None
         """
         self.slug: str = generate_slug(self.course_title)
         self.course_template: str = self.generate_course_template()
@@ -443,9 +440,13 @@ class Course:
 
 def get_user_input() -> Course:
     """
-    Queries the user via the command-line for the `course_number`, `course_title`, and `short_title`.
-    Then for each `section`, queries the user for the `section_title` and loops over for `subsection_title` until `CTRL-D`.
+    - Queries the user via the command-line for the `course_number`, `course_title`, and `short_title`.
+    - Then for each `section`, queries the user for the `section_title` and loops over for `subsection_title` until `CTRL-D`.
+
+    Returns:
+        Course: A `Course` instance created from user inputs.
     """
+
     course_number = input("Enter the course number (leave blank if no course number): ")
     course_title = input("Enter the course title: ")
     short_title = input("Enter the short-form title (case-sensitive): ")
