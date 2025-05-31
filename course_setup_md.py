@@ -299,7 +299,9 @@ class Section:
 
             sub_title = f"{self.course.short_title} - {sub_num} - {sub_section.title()}"
 
-            sub_template: str = _render_markdown(sub_title, self.section_toc)
+            sub_extra_headers = "## Key Points/Concepts\n\n## Lecture\n\n## Misc."
+
+            sub_template: str = _render_markdown(sub_title, self.section_toc, extra=sub_extra_headers)
 
             slug: str = generate_slug(sub_section)
             filename = f"{index:02d}-{slug}.md"
