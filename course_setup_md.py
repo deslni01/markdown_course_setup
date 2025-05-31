@@ -113,9 +113,36 @@ class MarkdownPage:
 class Section:
     """
     Class representing the section of a course.
+
+    Attributes:
+        slug (str): A slugified version of the `section_title`, for folder and filename construction.
+        section_title (str): The name of the section title, displayed in H1, TOC, and YAML sections of the markdown file.
+        subsections (list[str]): A list of subsection titles, used to build the TOC.
+        course (Course): The Course object.
+        index (int): Numeric position of the section within the course, to generate the filename and TOC.
+        section_toc (str): A string representing the section index TOC in markdown format.
+
+    Methods:
+        section_template() -> str:
+            Returns the completed markdown string (YAML, TOC, etc.) for the section's index page (`00-section_name.md`).
+        flashcard_template() -> str:
+            Returns the completed markdown string (YAML, TOC, etc.) for the section's flashcard page (`99-flashcards_section_name.md`).
+        add_subsections(subsection_title: str) -> None:
+            Appends a new `subsection_title` to the list of `subsections`.
+        generate_section_toc(all_sections: list[Section], course: Course) -> str:
+            Generates the markdown for an Obsidian-formatted table of contents, where the subsections are indented under their parent section link.
+        generate_dir_and_markdown_files(self, index: int, course: Course) -> None:
+            Creates the TOC, all directories, and all markdown pages.
     """
 
-    def __init__(self, section_title, course):
+    slug: str
+    section_title: str
+    subsections: list[str]
+    course: Course
+    index: int
+    section_toc: str
+
+    def __init__(self, section_title: str, course: Course) -> None:
         self.slug = generate_slug(section_title)
         self.section_title = section_title
         self.subsections = []
@@ -124,14 +151,26 @@ class Section:
         self.section_toc = ""
 
     @property
-    def section_template(self):
+    def section_template(self) -> str:
+        """
+        Generates a title and passes it to the `_render_markdown()` function to create the `section_template` markdown text on the fly.
+
+        Returns:
+            str - Markdown-formatted text for the section index page.
+        """
         sec_num = f"{self.index:02d}"
 
         sec_title = f"{self.course.short_title} - {sec_num}.{INDEX_PAGE:02d} - {self.section_title.title()}"
         return _render_markdown(sec_title, self.section_toc)
 
     @property
-    def flashcard_template(self):
+    def flashcard_template(self) -> str:
+        """
+        Generates a title and a list of `H2` subsection headers (as the `extra` argument) and passes to `_render_markdown()` to create the `flashcard_template` markdown on the fly.
+
+        Returns:
+            str - Markdown-formatted text for the section flashcard page, including subsection `H2` headers for each subsection.
+        """
         sec_num = f"{self.index:02d}"
 
         flashcards_title = f"{self.course.short_title} - {sec_num}.{FLASHCARDS_PAGE} - {self.section_title.title()} Flashcards"
@@ -148,10 +187,30 @@ class Section:
             flashcards_title, self.section_toc, extra=sub_section_lines, dates=False
         )
 
-    def add_subsections(self, subsection_title):
+    def add_subsections(self, subsection_title: str) -> None:
+        """
+        Appends the `subsection_title` to the list of `subsections` within the `Section`.
+
+        Args:
+            subsection_title (str): The title of the subsection.
+
+        Returns:
+            None
+        """
         self.subsections.append(subsection_title)
 
-    def generate_section_toc(self, all_sections, course):
+    def generate_section_toc(self, all_sections: list[Section], course: Course) -> str:
+        """
+        Loops through the sections, creating the Obsidian-formatted markdown links for each `section`. The `subsections` of the current `section` are also generated and indented.
+
+        Args:
+            all_sections (list[Section]): The list of all sections from the instantiated `Course` object.
+
+            course (Course): A reference to the current `Course` object.
+
+        Returns:
+            str - A section table of contents, containing each `section` and only the `subsections` of the current `section`, which are indented.
+        """
         lines = [
             f"- [[{INDEX_PAGE:02d}-{course.slug}|{course.short_title} - {course.course_title.title()}]]\n"
         ]
@@ -186,27 +245,40 @@ class Section:
 
         return "".join(lines)
 
-    def generate_dir_and_markdown_files(self, index, course):
+    def generate_dir_and_markdown_files(self, index: int, course: Course) -> None:
+        """
+        - Creates the TOC for the `section`, and the `outdir` for the course and `section`.
+        - Instantiates MarkdownPage objects for the `course` index, `section` index and flashcard files and runs the `FileGenerator` function to write the files.
+        - Loops over the list of `subsections` to instantiate MarkdownPage objects and runs `FileGenerator` function to write the files for each `subsection`.
+
+        Args:
+            index (int): The `index` of the current section, used to generate the appropriate directory and links.
+
+            course (Course): A reference to the current `Course` instantiation.
+
+        Returns:
+            None
+        """
         self.index = index  # store section index on the fly
 
-        self.section_toc = self.generate_section_toc(course.sections, course)
+        self.section_toc: str = self.generate_section_toc(course.sections, course)
         outdir = f"{course.output_dir}/{index:02d}-{self.slug}"
 
-        section_index_file = MarkdownPage(
+        section_index_file: MarkdownPage = MarkdownPage(
             self.section_title,
             self.slug,
             self.section_template,
             f"{INDEX_PAGE:02d}-" + self.slug + ".md",
         )
 
-        section_flashcard_file = MarkdownPage(
+        section_flashcard_file: MarkdownPage = MarkdownPage(
             f"{self.section_title} Flashcards",
             self.slug,
             self.flashcard_template,
             f"{FLASHCARDS_PAGE}-flashcards_{self.slug}.md",
         )
 
-        course_index_file = MarkdownPage(
+        course_index_file: MarkdownPage = MarkdownPage(
             course.course_title,
             course.slug,
             course.course_template,
@@ -222,12 +294,14 @@ class Section:
 
             sub_title = f"{self.course.short_title} - {sub_num} - {sub_section.title()}"
 
-            sub_template = _render_markdown(sub_title, self.section_toc)
+            sub_template: str = _render_markdown(sub_title, self.section_toc)
 
-            slug = generate_slug(sub_section)
+            slug: str = generate_slug(sub_section)
             filename = f"{index:02d}-{slug}.md"
-            sub_section = MarkdownPage(sub_section, slug, sub_template, filename)
-            FileGenerator.create_markdown_file(sub_section, outdir)
+            sub_section_page: MarkdownPage = MarkdownPage(
+                sub_section, slug, sub_template, filename
+            )
+            FileGenerator.create_markdown_file(sub_section_page, outdir)
 
 
 class Course:
