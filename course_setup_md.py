@@ -305,6 +305,43 @@ class Section:
 
 
 class Course:
+    """
+    Class representing the contents of a Course. Inside each `Course` is a list of one or more `Sections` - each containing a list of one or more `Subsections`.
+
+    Arguments:
+        course_title (str):
+            The title of the course.
+        short_title (str):
+            The course-indicator or short-hand version of the course, e.g. `CS 1234`, or `NitN`.
+        course_number (int | None):
+            The number of the course within a larger specialization or program, prepends the main directory with this as a two-digit number (e.g. `01-course_name/`). If left blank (`None`), no course number is added (e.g. `course_name/`).
+        sections (list[Section]):
+            A list containing all of the instantiated `Section` objects.
+        course_template (str):
+            The markdown template to be used in the `MarkdownPage` instantiation.
+        slug (str):
+            A slugified version of the `course_title`.
+
+    Methods:
+        generate_course_template() -> str:
+            Generates the markdown for the course template.
+        output_dir() -> str:
+            Uses the `slug` and optionally the `course_number` to create the directory name.
+        generate_sections(sections: list[Section]) -> None:
+            Loops over the list of `Section` objects to create all directories and files.
+        generate_course() -> None:
+            Sets up additional fields and triggers the creation of directories and files.
+
+    """
+
+    course_title: str
+    short_title: str
+    course_number: int | None
+    sections: list[Section]
+    course_template: str
+    slug: str
+
+
     def __init__(self, course_title, short_title, course_number=None):
         self.course_title = course_title
         self.short_title = short_title
@@ -322,14 +359,21 @@ class Course:
             f"***Folder Name:{self.slug}"
         )
 
-    def generate_course_template(self):
+    def generate_course_template(self) -> str:
+        """
+        Generates the `title` and `table_of_contents` for the `course` index file.
+
+        Returns:
+            str - Markdown containing the main course YAML information, headers, and a table of contents with each `section` and all `subsections` (indented under their parent `section`).
+        """
+
         title = f"{self.short_title} - {self.course_title.title()}"
 
         lines = [
             f"- [[{INDEX_PAGE:02d}-{self.slug}|{self.short_title} - {self.course_title.title()}]]\n"
         ]
         for sec_idx, section in enumerate(self.sections, start=1):
-            sec_slug = generate_slug(section.section_title)
+            sec_slug: str = generate_slug(section.section_title)
             sec_num = f"{sec_idx:02d}"
             lines.append(
                 f"- [[{INDEX_PAGE:02d}-{sec_slug}|"
@@ -338,7 +382,7 @@ class Course:
             )
             # indent all subsections
             for sub_idx, subsection in enumerate(section.subsections, start=1):
-                sub_slug = generate_slug(subsection)
+                sub_slug: str = generate_slug(subsection)
                 sec_num = f"{sec_idx:02d}"
                 sub_num = f"{sub_idx:02d}"
                 lines.append(
@@ -358,26 +402,42 @@ class Course:
         return _render_markdown(title, table_of_contents, dates=False)
 
     @property
-    def output_dir(self):
+    def output_dir(self) -> str:
+        """
+        Generates the output directory for the course using the `slug` - optionally combined with the `course_number`, if provided.
+
+        Returns:
+            str - The directory path for the course, optionally prepended with `course_number`.
+        """
         if self.course_number:
             return os.path.join(
                 os.getcwd(), f"{int(self.course_number):02d}-{self.slug}"
             )
         return os.path.join(os.getcwd(), self.slug)
 
-    def generate_sections(self, sections) -> None:
+    def generate_sections(self, sections: list[Section]) -> None:
         """
-        Iterates of the course `sections`, calling `generate_dir_and_markdown_files` for each `section`.
+        Iterates of the course `sections`, calling `generate_dir_and_markdown_files` for each `section` to create all directories and files.
+
+        Args:
+            sections (list[Section]):
+                The list of `Section` objects within the `Course`.
+
+        Returns:
+            None
         """
-        for index, section in enumerate(self.sections, start=1):
+        for index, section in enumerate(sections, start=1):
             section.generate_dir_and_markdown_files(index, self)
 
     def generate_course(self) -> None:
         """
         Sets up course fields for `slug` and `course_template`, then calls `generate_sections()` to create the files.
+
+        Returns:
+            None
         """
-        self.slug = generate_slug(self.course_title)
-        self.course_template = self.generate_course_template()
+        self.slug: str = generate_slug(self.course_title)
+        self.course_template: str = self.generate_course_template()
         self.generate_sections(self.sections)
 
 
