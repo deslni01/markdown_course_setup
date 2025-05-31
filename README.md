@@ -54,8 +54,11 @@ dates: []
 My system has this general format:
 
 - a parent folder for a specialization/related topics (e.g. a program consisting of 3 distinct parts/courses) - this is NOT generated;
-  - a folder for a course, with an optional number preceding the course title for cases in which it is part of a larger specialization/program, as well as a markdown file, `00-course_name_here.md` which includes an automatically generated and filled out markdown file; - a folder for each defined section of the course - think chapters of a book, weeks, etc.; - these _section_ folders contain a `00-` _section index file_, `99-` _section flashcards file_, as well as a file for each _subsection_.
-    For example:
+  - a folder for a course, with an optional number preceding the course title for cases in which it is part of a larger specialization/program, as well as a markdown file, `00-course_name_here.md` which includes an automatically generated and filled out markdown file;
+  - a folder for each defined section of the course (think chapters of a book, weeks, etc.);
+    - these _section_ folders contain a `00-` _section index file_, `99-` _section flashcards file_, as well as a file for each _subsection_.
+
+For example:
 
 ```
 Parent_Specialization_Folder/
