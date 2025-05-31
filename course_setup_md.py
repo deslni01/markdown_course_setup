@@ -203,7 +203,7 @@ class Course:
         self.course_number = course_number
 
         self.sections = []
-        self.course_template = ()
+        self.course_template = ''
         self.slug = ""
 
     def __str__(self):
@@ -257,48 +257,55 @@ class Course:
             )
         return os.path.join(os.getcwd(), self.slug)
 
-    def add_section(self, section_title):
-        section = Section(section_title, self)
-        try:
-            while True:
-                subsection_title = input("Subsection title: ")
-                section.add_subsections(subsection_title)
-        except EOFError:
-            print()
-
-        self.sections.append(section)
-
-    def generate_sections(self, sections):
+    def generate_sections(self, sections) -> None:
+        """
+        Iterates of the course `sections`, calling `generate_dir_and_markdown_files` for each `section`.
+        """
         for index, section in enumerate(self.sections, start=1):
             section.generate_dir_and_markdown_files(index, self)
 
-    @classmethod
-    def get_course_info(cls):
-        course_number = input(
+    def generate_course(self) -> None:
+        """
+        Sets up course fields for `slug` and `course_template`, then calls `generate_sections()` to create the files.
+        """
+        self.slug = generate_slug(self.course_title)
+        self.course_template = self.generate_course_template()
+        self.generate_sections(self.sections)
+
+def get_user_input() -> Course:
+    """
+    Queries the user via the command-line for the `course_number`, `course_title`, and `short_title`.
+    Then for each `section`, queries the user for the `section_title` and loops over for `subsection_title` until `CTRL-D`.
+    """
+    course_number = input(
             "Enter the course number (leave blank if no course number): "
         )
-        course_title = input("Enter the course title: ")
-        short_title = input("Enter the short-form title (case-sensitive): ")
-        course = cls(course_title, short_title, course_number)
+    course_title = input("Enter the course title: ")
+    short_title = input("Enter the short-form title (case-sensitive): ")
+    course = Course(course_title, short_title, course_number)
 
-        print("\nEnter the section title (or CTRL-D to finish):\n")
-        try:
-            while True:
-                section_title = input("Section title: ")
-                course.add_section(section_title)
-        except EOFError:
-            print()
+    print("\nEnter the section title (or CTRL-D to finish):\n")
+    try:
+        while True:
+            section_title = input("Section title: ")
+            section = Section(section_title, course)
+            try:
+                while True:
+                    subsection_title = input("Subsection title: ")
+                    section.add_subsections(subsection_title)
+            except EOFError:
+                print()
 
-        course.slug = generate_slug(course_title)
-        course.course_template = course.generate_course_template()
+            course.sections.append(section)
+    except EOFError:
+        print()
 
-        course.generate_sections(course.sections)
-
-        return course
+    return course
 
 
 def main():
-    course = Course.get_course_info()
+    course = get_user_input()
+    course.generate_course()
 
 
 if __name__ == "__main__":
