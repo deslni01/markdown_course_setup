@@ -1,6 +1,7 @@
 from __future__ import annotations  # for forward references
 from dataclasses import dataclass
 from pathlib import Path
+import argparse
 import os
 
 INDEX_PAGE = 0  # for `00-` index pages
@@ -205,7 +206,9 @@ class Section:
         """
         self.subsections.append(subsection_title)
 
-    def generate_section_toc(self, all_sections: list[Section], course: Course) -> str:
+    def generate_section_toc(
+        self, all_sections: list[Section], course: Course, write_files: bool
+    ) -> str:
         """
         Loops through the sections, creating the Obsidian-formatted markdown links for each `section`. The `subsections` of the current `section` are also generated and indented.
 
@@ -225,34 +228,44 @@ class Section:
             slug = generate_slug(section.section_title)
             num = f"{sec_idx:02d}"
 
-            # Adds a link for each section
-            lines.append(
-                f"- [[{INDEX_PAGE:02d}-{slug}|"
-                f"{course.short_title} - {num}.{INDEX_PAGE:02d} "
-                f"- {section.section_title.title()}]]\n"
-            )
-
-            # Adds and indents all subsections of current section
-            if section is self:
-                for sub_idx, subsection in enumerate(self.subsections, start=1):
-                    sub_slug = generate_slug(subsection)
-                    sec_num = f"{sec_idx:02d}"
-                    sub_num = f"{sub_idx:02d}"
-                    lines.append(
-                        f"\t- [[{sub_num}-{sub_slug}|"
-                        f"{course.short_title} - {sec_num}.{sub_num} - {subsection.title()}]]\n"
-                    )
-
-                section_flashcard_file = (
-                    f"\t- [[{FLASHCARDS_PAGE}-flashcards_{slug}|"
-                    f"{course.short_title} - {num}.{FLASHCARDS_PAGE} "
-                    f"- {self.section_title.title()} Flashcards]]\n"
+            if write_files:
+                # Adds a link for each section
+                lines.append(
+                    f"- [[{INDEX_PAGE:02d}-{slug}|"
+                    f"{course.short_title} - {num}.{INDEX_PAGE:02d} "
+                    f"- {section.section_title.title()}]]\n"
                 )
-                lines.append(section_flashcard_file)
+                # Adds and indents all subsections of current section
+                if section is self:
+                    for sub_idx, subsection in enumerate(self.subsections, start=1):
+                        sub_slug = generate_slug(subsection)
+                        sec_num = f"{sec_idx:02d}"
+                        sub_num = f"{sub_idx:02d}"
+                        lines.append(
+                            f"\t- [[{sub_num}-{sub_slug}|"
+                            f"{course.short_title} - {sec_num}.{sub_num} - {subsection.title()}]]\n"
+                        )
+
+                    section_flashcard_file = (
+                        f"\t- [[{FLASHCARDS_PAGE}-flashcards_{slug}|"
+                        f"{course.short_title} - {num}.{FLASHCARDS_PAGE} "
+                        f"- {self.section_title.title()} Flashcards]]\n"
+                    )
+                    lines.append(section_flashcard_file)
+
+            else:
+                # Adds a link for each section
+                lines.append(
+                    f"- [[{sec_idx:02d}-{slug}|"
+                    f"{course.short_title} - {sec_idx:02d} "
+                    f"- {section.section_title.title()}]]\n"
+                )
 
         return "".join(lines)
 
-    def generate_dir_and_markdown_files(self, index: int, course: Course) -> None:
+    def generate_dir_and_markdown_files(
+        self, index: int, course: Course, write_files: bool
+    ) -> None:
         """
         - Creates the TOC for the `section`, and the `outdir` for the course and `section`.
         - Instantiates MarkdownPage objects for the `course` index, `section` index and flashcard files and runs the `FileGenerator` function to write the files.
@@ -266,49 +279,84 @@ class Section:
         """
         self.index = index  # store section index on the fly
 
-        self.section_toc: str = self.generate_section_toc(course.sections, course)
-        outdir = f"{course.output_dir}/{index:02d}-{self.slug}"
-
-        section_index_file: MarkdownPage = MarkdownPage(
-            self.section_title,
-            self.slug,
-            self.section_template,
-            f"{INDEX_PAGE:02d}-" + self.slug + ".md",
+        self.section_toc: str = self.generate_section_toc(
+            course.sections, course, write_files
         )
 
-        section_flashcard_file: MarkdownPage = MarkdownPage(
-            f"{self.section_title} Flashcards",
-            self.slug,
-            self.flashcard_template,
-            f"{FLASHCARDS_PAGE}-flashcards_{self.slug}.md",
-        )
+        if write_files:
 
-        course_index_file: MarkdownPage = MarkdownPage(
-            course.course_title,
-            course.slug,
-            course.course_template,
-            f"{INDEX_PAGE:02d}-" + course.slug + ".md",
-        )
+            outdir = f"{course.output_dir}/{index:02d}-{self.slug}"
 
-        FileGenerator.create_markdown_file(section_index_file, outdir)
-        FileGenerator.create_markdown_file(section_flashcard_file, outdir)
-        FileGenerator.create_markdown_file(course_index_file, course.output_dir)
-
-        for index, sub_section in enumerate(self.subsections, start=1):
-            sub_num = f"{self.index:02d}.{index:02d}"
-
-            sub_title = f"{self.course.short_title} - {sub_num} - {sub_section.title()}"
-
-            sub_extra_headers = "## Key Points/Concepts\n\n## Lecture\n\n## Misc."
-
-            sub_template: str = _render_markdown(sub_title, self.section_toc, extra=sub_extra_headers)
-
-            slug: str = generate_slug(sub_section)
-            filename = f"{index:02d}-{slug}.md"
-            sub_section_page: MarkdownPage = MarkdownPage(
-                sub_section, slug, sub_template, filename
+            section_index_file: MarkdownPage = MarkdownPage(
+                self.section_title,
+                self.slug,
+                self.section_template,
+                f"{INDEX_PAGE:02d}-" + self.slug + ".md",
             )
-            FileGenerator.create_markdown_file(sub_section_page, outdir)
+
+            section_flashcard_file: MarkdownPage = MarkdownPage(
+                f"{self.section_title} Flashcards",
+                self.slug,
+                self.flashcard_template,
+                f"{FLASHCARDS_PAGE}-flashcards_{self.slug}.md",
+            )
+
+            course_index_file: MarkdownPage = MarkdownPage(
+                course.course_title,
+                course.slug,
+                course.course_template,
+                f"{INDEX_PAGE:02d}-" + course.slug + ".md",
+            )
+
+            FileGenerator.create_markdown_file(section_index_file, outdir)
+            FileGenerator.create_markdown_file(section_flashcard_file, outdir)
+            FileGenerator.create_markdown_file(course_index_file, course.output_dir)
+
+            for index, sub_section in enumerate(self.subsections, start=1):
+                sub_num = f"{self.index:02d}.{index:02d}"
+
+                sub_title = (
+                    f"{self.course.short_title} - {sub_num} - {sub_section.title()}"
+                )
+
+                sub_extra_headers = "## Key Points/Concepts\n\n## Lecture\n\n## Misc."
+
+                sub_template: str = _render_markdown(
+                    sub_title, self.section_toc, extra=sub_extra_headers
+                )
+
+                slug: str = generate_slug(sub_section)
+                filename = f"{index:02d}-{slug}.md"
+                sub_section_page: MarkdownPage = MarkdownPage(
+                    sub_section, slug, course.course_template, filename
+                )
+                FileGenerator.create_markdown_file(sub_section_page, outdir)
+        else:
+            outdir = f"{course.output_dir}"
+
+            course_index_file: MarkdownPage = MarkdownPage(
+                course.course_title,
+                course.slug,
+                course.course_template,
+                f"{INDEX_PAGE:02d}-" + course.slug + ".md",
+            )
+            FileGenerator.create_markdown_file(course_index_file, course.output_dir)
+
+            ## gnerate section markdown file
+            # title, slug, template, filename
+            section_outline = "## Key Points/Concents\n\n## Lecture\n\n## Misc."
+
+            section_title = f"{self.course.short_title} - {self.index:02d} - {self.section_title.title()}"
+            slug = self.slug
+            sub_template: str = _render_markdown(
+                section_title, self.section_toc, extra=section_outline
+            )
+
+            filename = f"{index:02d}-{slug}.md"
+            section_markdown_file: MarkdownPage = MarkdownPage(
+                section_title, slug, sub_template, filename
+            )
+            FileGenerator.create_markdown_file(section_markdown_file, outdir)
 
 
 class Course:
@@ -364,7 +412,7 @@ class Course:
             f"***Folder Name:{self.slug}"
         )
 
-    def generate_course_template(self) -> str:
+    def generate_course_template(self, write_files: bool) -> str:
         """
         Generates the `title` and `table_of_contents` for the `course` index file.
 
@@ -377,30 +425,39 @@ class Course:
         lines = [
             f"- [[{INDEX_PAGE:02d}-{self.slug}|{self.short_title} - {self.course_title.title()}]]\n"
         ]
+
         for sec_idx, section in enumerate(self.sections, start=1):
             sec_slug: str = generate_slug(section.section_title)
             sec_num = f"{sec_idx:02d}"
-            lines.append(
-                f"- [[{INDEX_PAGE:02d}-{sec_slug}|"
-                f"{self.short_title} - {sec_num}.{INDEX_PAGE:02d} "
-                f"- {section.section_title.title()}]]\n"
-            )
-            # indent all subsections
-            for sub_idx, subsection in enumerate(section.subsections, start=1):
-                sub_slug: str = generate_slug(subsection)
-                sec_num = f"{sec_idx:02d}"
-                sub_num = f"{sub_idx:02d}"
-                lines.append(
-                    f"\t- [[{sub_num}-{sub_slug}|"
-                    f"{self.short_title} - {sec_num}.{sub_num} - {subsection.title()}]]\n"
-                )
 
-            section_flashcard_file = (
-                f"\t- [[{FLASHCARDS_PAGE}-flashcards_{sec_slug}|"
-                f"{self.short_title} - {sec_num}.{FLASHCARDS_PAGE} "
-                f"- {section.section_title.title()} Flashcards]]\n"
-            )
-            lines.append(section_flashcard_file)
+            if write_files:
+                lines.append(
+                    f"- [[{INDEX_PAGE:02d}-{sec_slug}|"
+                    f"{self.short_title} - {sec_num}.{INDEX_PAGE:02d} "
+                    f"- {section.section_title.title()}]]\n"
+                )
+                # indent all subsections
+                for sub_idx, subsection in enumerate(section.subsections, start=1):
+                    sub_slug: str = generate_slug(subsection)
+                    sec_num = f"{sec_idx:02d}"
+                    sub_num = f"{sub_idx:02d}"
+                    lines.append(
+                        f"\t- [[{sub_num}-{sub_slug}|"
+                        f"{self.short_title} - {sec_num}.{sub_num} - {subsection.title()}]]\n"
+                    )
+
+                section_flashcard_file = (
+                    f"\t- [[{FLASHCARDS_PAGE}-flashcards_{sec_slug}|"
+                    f"{self.short_title} - {sec_num}.{FLASHCARDS_PAGE} "
+                    f"- {section.section_title.title()} Flashcards]]\n"
+                )
+                lines.append(section_flashcard_file)
+            else:
+                lines.append(
+                    f"- [[{sec_idx:02d}-{sec_slug}|"
+                    f"{self.short_title} - {sec_idx:02d} "
+                    f"- {section.section_title.title()}]]\n"
+                )
 
         table_of_contents = "".join(lines)
 
@@ -420,7 +477,7 @@ class Course:
             )
         return os.path.join(os.getcwd(), self.slug)
 
-    def generate_sections(self, sections: list[Section]) -> None:
+    def generate_sections(self, sections: list[Section], write_files: bool) -> None:
         """
         Iterates of the course `sections`, calling `generate_dir_and_markdown_files` for each `section` to create all directories and files.
 
@@ -429,18 +486,18 @@ class Course:
                 The list of `Section` objects within the `Course`.
         """
         for index, section in enumerate(sections, start=1):
-            section.generate_dir_and_markdown_files(index, self)
+            section.generate_dir_and_markdown_files(index, self, write_files)
 
-    def generate_course(self) -> None:
+    def generate_course(self, write_files: bool) -> None:
         """
         Sets up course fields for `slug` and `course_template`, then calls `generate_sections()` to create the files.
         """
         self.slug: str = generate_slug(self.course_title)
-        self.course_template: str = self.generate_course_template()
-        self.generate_sections(self.sections)
+        self.course_template: str = self.generate_course_template(write_files)
+        self.generate_sections(self.sections, write_files)
 
 
-def get_user_input() -> Course:
+def get_user_input(write_files: bool) -> Course:
     """
     - Queries the user via the command-line for the `course_number`, `course_title`, and `short_title`.
     - Then for each `section`, queries the user for the `section_title` and loops over for `subsection_title` until `CTRL-D`.
@@ -450,21 +507,22 @@ def get_user_input() -> Course:
     """
 
     course_number = input("Enter the course number (leave blank if no course number): ")
-    course_title = input("Enter the course title: ")
-    short_title = input("Enter the short-form title (case-sensitive): ")
+    course_title = input("Enter the course title: ").strip()
+    short_title = input("Enter the short-form title (case-sensitive): ").strip()
     course = Course(course_title, short_title, course_number)
 
     print("\nEnter the section title (or CTRL-D to finish):\n")
     try:
         while True:
-            section_title = input("Section title: ")
+            section_title = input("Section title: ").strip()
             section = Section(section_title, course)
-            try:
-                while True:
-                    subsection_title = input("Subsection title: ")
-                    section.add_subsections(subsection_title)
-            except EOFError:
-                print()
+            if write_files:
+                try:
+                    while True:
+                        subsection_title = input("Subsection title: ").strip()
+                        section.add_subsections(subsection_title)
+                except EOFError:
+                    print()
 
             course.sections.append(section)
     except EOFError:
@@ -474,8 +532,20 @@ def get_user_input() -> Course:
 
 
 def main():
-    course = get_user_input()
-    course.generate_course()
+    parser = argparse.ArgumentParser(
+        description="Program to create structured directories and markdown files with auto-completed tables of contents, using Obsidian-style links between sections and subsections."
+    )
+    parser.add_argument(
+        "-nd",
+        "--no-dirs",
+        help="To create section markdown files rather than section folders, indices, flashcards, and subsection files.",
+        action="store_true",
+    )
+    args = parser.parse_args()
+    write_files = not args.no_dirs
+
+    course = get_user_input(write_files)
+    course.generate_course(write_files)
 
 
 if __name__ == "__main__":
