@@ -32,7 +32,7 @@ def generate_slug(title: str) -> str:
     )
 
 
-def _render_markdown(
+def render_markdown(
     title: str, table_of_contents: str, dates: bool = True, extra: str = "## Misc."
 ) -> str:
     """
@@ -163,7 +163,7 @@ class Section:
     @property
     def section_template(self) -> str:
         """
-        Generates a title and passes it to the `_render_markdown()` function to create the `section_template` markdown text on the fly.
+        Generates a title and passes it to the `render_markdown()` function to create the `section_template` markdown text on the fly.
 
         Returns:
             str: Markdown-formatted text for the section index page.
@@ -171,12 +171,12 @@ class Section:
         sec_num = f"{self.index:02d}"
 
         sec_title = f"{self.course.short_title} - {sec_num}.{INDEX_PAGE:02d} - {self.section_title.title()}"
-        return _render_markdown(sec_title, self.section_toc)
+        return render_markdown(sec_title, self.section_toc)
 
     @property
     def flashcard_template(self) -> str:
         """
-        Generates a title and a list of `H2` subsection headers (as the `extra` argument) and passes to `_render_markdown()` to create the `flashcard_template` markdown on the fly.
+        Generates a title and a list of `H2` subsection headers (as the `extra` argument) and passes to `render_markdown()` to create the `flashcard_template` markdown on the fly.
 
         Returns:
             str: Markdown-formatted text for the section flashcard page, including subsection `H2` headers for each subsection.
@@ -193,7 +193,7 @@ class Section:
 
         sub_section_lines = "".join(sub_sections)
 
-        return _render_markdown(
+        return render_markdown(
             flashcards_title, self.section_toc, extra=sub_section_lines, dates=False
         )
 
@@ -321,7 +321,7 @@ class Section:
 
                 sub_extra_headers = "## Key Points/Concepts\n\n## Lecture\n\n## Misc."
 
-                sub_template: str = _render_markdown(
+                sub_template: str = render_markdown(
                     sub_title, self.section_toc, extra=sub_extra_headers
                 )
 
@@ -348,7 +348,7 @@ class Section:
 
             section_title = f"{self.course.short_title} - {self.index:02d} - {self.section_title.title()}"
             slug = self.slug
-            sub_template: str = _render_markdown(
+            sub_template: str = render_markdown(
                 section_title, self.section_toc, extra=section_outline
             )
 
@@ -461,7 +461,7 @@ class Course:
 
         table_of_contents = "".join(lines)
 
-        return _render_markdown(title, table_of_contents, dates=False)
+        return render_markdown(title, table_of_contents, dates=False)
 
     @property
     def output_dir(self) -> str:
