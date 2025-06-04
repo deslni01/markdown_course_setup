@@ -207,7 +207,7 @@ class Section:
         self.subsections.append(subsection_title)
 
     def generate_section_toc(
-        self, all_sections: list[Section], course: Course, write_files: bool
+        self, all_sections: list[Section], course: Course, write_dirs: bool
     ) -> str:
         """
         Loops through the sections, creating the Obsidian-formatted markdown links for each `section`. The `subsections` of the current `section` are also generated and indented.
@@ -228,7 +228,7 @@ class Section:
             slug = generate_slug(section.section_title)
             num = f"{sec_idx:02d}"
 
-            if write_files:
+            if write_dirs:
                 # Adds a link for each section
                 lines.append(
                     f"- [[{INDEX_PAGE:02d}-{slug}|"
@@ -264,7 +264,7 @@ class Section:
         return "".join(lines)
 
     def generate_dir_and_markdown_files(
-        self, index: int, course: Course, write_files: bool
+        self, index: int, course: Course, write_dirs: bool, extra_section: str
     ) -> None:
         """
         - Creates the TOC for the `section`, and the `outdir` for the course and `section`.
@@ -280,11 +280,10 @@ class Section:
         self.index = index  # store section index on the fly
 
         self.section_toc: str = self.generate_section_toc(
-            course.sections, course, write_files
+            course.sections, course, write_dirs
         )
 
-        if write_files:
-
+        if write_dirs:
             outdir = f"{course.output_dir}/{index:02d}-{self.slug}"
 
             section_index_file: MarkdownPage = MarkdownPage(
@@ -319,7 +318,10 @@ class Section:
                     f"{self.course.short_title} - {sub_num} - {sub_section.title()}"
                 )
 
-                sub_extra_headers = "## Key Points/Concepts\n\n## Lecture\n\n## Misc."
+                if extra_section:
+                    sub_extra_headers = extra_section
+                else:
+                    sub_extra_headers = "## Key Points/Concepts\n\n## Lecture\n\n## Misc."
 
                 sub_template: str = render_markdown(
                     sub_title, self.section_toc, extra=sub_extra_headers
@@ -328,7 +330,7 @@ class Section:
                 slug: str = generate_slug(sub_section)
                 filename = f"{index:02d}-{slug}.md"
                 sub_section_page: MarkdownPage = MarkdownPage(
-                    sub_section, slug, course.course_template, filename
+                    sub_section, slug, sub_template, filename
                 )
                 FileGenerator.create_markdown_file(sub_section_page, outdir)
         else:
@@ -342,9 +344,12 @@ class Section:
             )
             FileGenerator.create_markdown_file(course_index_file, course.output_dir)
 
-            ## gnerate section markdown file
+            ## generate section markdown file
             # title, slug, template, filename
-            section_outline = "## Key Points/Concents\n\n## Lecture\n\n## Misc."
+            if extra_section:
+                section_outline = extra_section
+            else:
+                section_outline = "## Key Points/Concepts\n\n## Lecture\n\n## Misc."
 
             section_title = f"{self.course.short_title} - {self.index:02d} - {self.section_title.title()}"
             slug = self.slug
@@ -412,7 +417,7 @@ class Course:
             f"***Folder Name:{self.slug}"
         )
 
-    def generate_course_template(self, write_files: bool) -> str:
+    def generate_course_template(self, write_dirs: bool) -> str:
         """
         Generates the `title` and `table_of_contents` for the `course` index file.
 
@@ -430,7 +435,7 @@ class Course:
             sec_slug: str = generate_slug(section.section_title)
             sec_num = f"{sec_idx:02d}"
 
-            if write_files:
+            if write_dirs:
                 lines.append(
                     f"- [[{INDEX_PAGE:02d}-{sec_slug}|"
                     f"{self.short_title} - {sec_num}.{INDEX_PAGE:02d} "
@@ -477,7 +482,7 @@ class Course:
             )
         return os.path.join(os.getcwd(), self.slug)
 
-    def generate_sections(self, sections: list[Section], write_files: bool) -> None:
+    def generate_sections(self, sections: list[Section], write_dirs: bool, extra_section: str) -> None:
         """
         Iterates of the course `sections`, calling `generate_dir_and_markdown_files` for each `section` to create all directories and files.
 
@@ -486,18 +491,18 @@ class Course:
                 The list of `Section` objects within the `Course`.
         """
         for index, section in enumerate(sections, start=1):
-            section.generate_dir_and_markdown_files(index, self, write_files)
+            section.generate_dir_and_markdown_files(index, self, write_dirs, extra_section)
 
-    def generate_course(self, write_files: bool) -> None:
+    def generate_course(self, write_dirs: bool, extra_section) -> None:
         """
         Sets up course fields for `slug` and `course_template`, then calls `generate_sections()` to create the files.
         """
         self.slug: str = generate_slug(self.course_title)
-        self.course_template: str = self.generate_course_template(write_files)
-        self.generate_sections(self.sections, write_files)
+        self.course_template: str = self.generate_course_template(write_dirs)
+        self.generate_sections(self.sections, write_dirs, extra_section)
 
 
-def get_user_input(write_files: bool) -> Course:
+def get_user_input(write_dirs: bool) -> Course:
     """
     - Queries the user via the command-line for the `course_number`, `course_title`, and `short_title`.
     - Then for each `section`, queries the user for the `section_title` and loops over for `subsection_title` until `CTRL-D`.
@@ -516,7 +521,7 @@ def get_user_input(write_files: bool) -> Course:
         while True:
             section_title = input("Section title: ").strip()
             section = Section(section_title, course)
-            if write_files:
+            if write_dirs:
                 try:
                     while True:
                         subsection_title = input("Subsection title: ").strip()
@@ -530,8 +535,10 @@ def get_user_input(write_files: bool) -> Course:
 
     return course
 
-
-def main():
+def parse_args():
+    """
+    Argparse handler to bundle up all the command-line arguments.
+    """
     parser = argparse.ArgumentParser(
         description="Program to create structured directories and markdown files with auto-completed tables of contents, using Obsidian-style links between sections and subsections."
     )
@@ -541,11 +548,32 @@ def main():
         help="To create section markdown files rather than section folders, indices, flashcards, and subsection files.",
         action="store_true",
     )
-    args = parser.parse_args()
-    write_files = not args.no_dirs
+    parser.add_argument(
+        "-e",
+        "--extra",
+        help="Pass in a string in markdown format to over-ride the additional formatting of the subsection files. When --no-dirs also flagged, this will over-ride the additional formatting of the section files.",
+        type=str
+    )
+    return parser.parse_args()
 
-    course = get_user_input(write_files)
-    course.generate_course(write_files)
+def parse_terminal_text(text: str | None) -> str | None:
+    """
+    Apparently the terminal text input does not pass newline characters to be rendered in markdown. This is fixes that.
+
+    args:
+        text (str | None): The input string to be parsed from the terminal.
+    """
+    if text is None:
+        return None
+    return text.encode().decode("unicode_escape")
+
+def main():
+    args = parse_args()
+    write_dirs = not args.no_dirs
+    extra_section = parse_terminal_text(args.extra)
+
+    course = get_user_input(write_dirs)
+    course.generate_course(write_dirs, extra_section)
 
 
 if __name__ == "__main__":
