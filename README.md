@@ -76,7 +76,7 @@ Parent_Specialization_Folder/
 
 ## Usage
 
-- Run `python course_setup_md.py`,
+- Run `python course_setup_md.py`, or use one of the [optional arguments](#optional-arguments),
 - User is prompted with a `course number` - can be left blank, otherwise will precede the _course_ directory name with the number, in 2-digit format (e.g. `1` will become `01`),
 - User is prompted with `course title` - can be entered lower-case, and it will generate using _title case_ throughout the markdown files,
 - User is prompted with `short-form title` - this might be a short-hand for the course, or perhaps the program code (e.g. a university might have `BTSA 5510` for the course),
@@ -88,3 +88,46 @@ Parent_Specialization_Folder/
 - User is then prompted for the first _subsection_ - case insensitive and generated using _title case_,
 - Subsequent _subsections_ are prompted, but `CTRL-D` will exit that _section_ and prompt the user for a new _section_ and subsequent _subsections_,
 - Upon keying `CTRL-D` on a _section_ prompt, the program will then generate all directories and files.
+
+### Optional Arguments
+
+```
+-n, --no-dirs         To create section markdown files rather than section
+                      folders, indices, flashcards, and subsection files.
+-t, --no-toc          To not generate a table of contents in the section files.
+                      This will only work if --no-dirs is also flagged. Useful
+                      to prevent large tables of contents in the section files
+                      when many sections are present.
+-e EXTRA, --extra EXTRA
+                      Pass in a string in markdown format to over-ride the
+                      additional formatting of the subsection files. When `--no-
+                      dirs` also flagged, this will over-ride the additional
+                      formatting of the section files. Note: best used with
+                      single quotes rather than double quotes to avoid any
+                      escaping issues present in the terminal.
+```
+
+- `-n`/`--no-dirs` is useful to create markdown files for a book, episodic material, etc. This generates only the main _course_ directory, _course index file_, and a formatted _section_ file for each supplied section - no _subsections_.
+- `t`/`--no-toc` will only generate the _table of contents_ in the _course index file_ and **not** an expanded _TOC_ in any _section_ files - but will still create a _TOC_ with a link to the _course index file_. This is useful when the book, episodic material, etc. has many sections which would create a long _TOC_.
+  - **Note:** This flag will only work when `-n`/`--no-dirs` is also flagged.
+    `-e <string>`/`--extra <string>` will over-ride the markdown headers below the _table of contents_ to the supplied markdown-formatted string.
+  - **Note:** Recommended to use _single quotes_ to handle terminal-related string issues.
+  - Example: `py course_setup_md.py -nte '## Transcript\n\n## Vocabulary\n\n## Footnotes'`
+
+```
+---
+title: Example 1 - Example Flag Usage
+tags: []
+dates: []
+---
+# 01 - Example Flag Usage
+## TOC
+- [[00-example_course|Example Course]]
+
+---
+## Transcript
+
+## Vocabulary
+
+## Footnotes
+```
