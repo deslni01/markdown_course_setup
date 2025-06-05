@@ -298,8 +298,6 @@ class Section:
             )
             FileGenerator.create_markdown_file(course_index_file, course.output_dir)
 
-            ## generate section markdown file
-            # title, slug, template, filename
             if extra_section:
                 section_outline = extra_section
             else:
@@ -415,7 +413,6 @@ class Course:
                 lines.append(
                     f"- [[{sec_idx:02d}-{sec_slug}|"
                     f"{self.short_title} - {sec_idx:02d} "
-                    # f"- {section.section_title.title()}]]\n"
                     f"- {handle_title(section.section_title)}]]\n"
                 )
 
@@ -621,7 +618,6 @@ def handle_title(text: str) -> str:
     }
 
     parts = re.split(r"(\s+)", text)
-    print(parts)
     new_parts = []
     for part in parts:
         if rom_regex.match(part):
