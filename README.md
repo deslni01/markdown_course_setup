@@ -110,8 +110,8 @@ Parent_Specialization_Folder/
 - `-n`/`--no-dirs` is useful to create markdown files for a book, episodic material, etc. This generates only the main _course_ directory, _course index file_, and a formatted _section_ file for each supplied section - no _subsections_.
 - `t`/`--no-toc` will only generate the _table of contents_ in the _course index file_ and **not** an expanded _TOC_ in any _section_ files - but will still create a _TOC_ with a link to the _course index file_. This is useful when the book, episodic material, etc. has many sections which would create a long _TOC_.
   - **Note:** This flag will only work when `-n`/`--no-dirs` is also flagged.
-    `-e <string>`/`--extra <string>` will over-ride the markdown headers below the _table of contents_ to the supplied markdown-formatted string.
-  - **Note:** Recommended to use _single quotes_ to handle terminal-related string issues.
+- `-e <string>`/`--extra <string>` will over-ride the markdown headers below the _table of contents_ to the supplied markdown-formatted string.
+  - **Note:** Recommended to use _single quotes_ to handle terminal-related string escape issues.
   - Example: `py course_setup_md.py -nte '## Transcript\n\n## Vocabulary\n\n## Footnotes'`
 
 ```
