@@ -571,7 +571,7 @@ def handle_title(text: str) -> str:
     Converts a string to title case, handling cases in which the string may contain Roman numerals, as well as ensuring words such as "and", "or", "the" are not capitalized unless they are the first word.
 
     Args:
-        str (str): The input string to be converted.
+        text (str): The input string to be converted.
 
     Returns:
         str: The title-cased, Roman-numeral handled version of the input string.
