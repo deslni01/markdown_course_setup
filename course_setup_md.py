@@ -53,7 +53,7 @@ def render_markdown(
     """
     return (
         "---\n"
-        f"title: '{title}'\n"
+        f'title: "{title}"\n'
         "tags: []\n"
         f"{'dates: []' if dates else ''}\n"
         "---\n"
@@ -207,7 +207,7 @@ class Section:
         self.subsections.append(subsection_title)
 
     def generate_section_toc(
-        self, all_sections: list[Section], course: Course, write_dirs: bool
+        self, all_sections: list[Section], course: Course, write_dirs: bool, no_toc: bool
     ) -> str:
         """
         Loops through the sections, creating the Obsidian-formatted markdown links for each `section`. The `subsections` of the current `section` are also generated and indented.
@@ -254,17 +254,18 @@ class Section:
                     lines.append(section_flashcard_file)
 
             else:
-                # Adds a link for each section
-                lines.append(
-                    f"- [[{sec_idx:02d}-{slug}|"
-                    f"{course.short_title} - {sec_idx:02d} "
-                    f"- {section.section_title.title()}]]\n"
-                )
+                if not no_toc:
+                    # Adds a link for each section
+                    lines.append(
+                        f"- [[{sec_idx:02d}-{slug}|"
+                        f"{course.short_title} - {sec_idx:02d} "
+                        f"- {section.section_title.title()}]]\n"
+                    )
 
         return "".join(lines)
 
     def generate_dir_and_markdown_files(
-        self, index: int, course: Course, write_dirs: bool, extra_section: str
+        self, index: int, course: Course, write_dirs: bool, extra_section: str, no_toc: bool
     ) -> None:
         """
         - Creates the TOC for the `section`, and the `outdir` for the course and `section`.
@@ -280,7 +281,7 @@ class Section:
         self.index = index  # store section index on the fly
 
         self.section_toc: str = self.generate_section_toc(
-            course.sections, course, write_dirs
+            course.sections, course, write_dirs, no_toc
         )
 
         if write_dirs:
@@ -482,7 +483,7 @@ class Course:
             )
         return os.path.join(os.getcwd(), self.slug)
 
-    def generate_sections(self, sections: list[Section], write_dirs: bool, extra_section: str) -> None:
+    def generate_sections(self, sections: list[Section], write_dirs: bool, extra_section: str, no_toc: bool) -> None:
         """
         Iterates of the course `sections`, calling `generate_dir_and_markdown_files` for each `section` to create all directories and files.
 
@@ -491,15 +492,15 @@ class Course:
                 The list of `Section` objects within the `Course`.
         """
         for index, section in enumerate(sections, start=1):
-            section.generate_dir_and_markdown_files(index, self, write_dirs, extra_section)
+            section.generate_dir_and_markdown_files(index, self, write_dirs, extra_section, no_toc)
 
-    def generate_course(self, write_dirs: bool, extra_section) -> None:
+    def generate_course(self, write_dirs: bool, extra_section, no_toc: bool) -> None:
         """
         Sets up course fields for `slug` and `course_template`, then calls `generate_sections()` to create the files.
         """
         self.slug: str = generate_slug(self.course_title)
         self.course_template: str = self.generate_course_template(write_dirs)
-        self.generate_sections(self.sections, write_dirs, extra_section)
+        self.generate_sections(self.sections, write_dirs, extra_section, no_toc)
 
 
 def get_user_input(write_dirs: bool) -> Course:
@@ -535,7 +536,7 @@ def get_user_input(write_dirs: bool) -> Course:
 
     return course
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """
     Argparse handler to bundle up all the command-line arguments.
     """
@@ -543,22 +544,34 @@ def parse_args():
         description="Program to create structured directories and markdown files with auto-completed tables of contents, using Obsidian-style links between sections and subsections."
     )
     parser.add_argument(
-        "-nd",
+        "-n",
         "--no-dirs",
         help="To create section markdown files rather than section folders, indices, flashcards, and subsection files.",
         action="store_true",
     )
     parser.add_argument(
+        "-t",
+        "--no-toc",
+        help="To not generate a table of contents in the section files. This will only work if --no-dirs is also flagged. Useful to prevent large tables of contents in the section files when many sections are present.",
+        action="store_true",
+    )
+    parser.add_argument(
         "-e",
         "--extra",
-        help="Pass in a string in markdown format to over-ride the additional formatting of the subsection files. When --no-dirs also flagged, this will over-ride the additional formatting of the section files.",
+        help="Pass in a string in markdown format to over-ride the additional formatting of the subsection files. When --no-dirs also flagged, this will over-ride the additional formatting of the section files. Note: best used with single quotes rather than double quotes to avoid any escaping issues present in the terminal.",
         type=str
     )
-    return parser.parse_args()
+
+    args = parser.parse_args()
+
+    if args.no_toc and not args.no_dirs:
+        parser.error("The --no-toc flag can only be used with --no-dirs.")
+
+    return args
 
 def parse_terminal_text(text: str | None) -> str | None:
     """
-    Apparently the terminal text input does not pass newline characters to be rendered in markdown. This is fixes that.
+    Apparently the terminal text input does not pass newline characters to be rendered in markdown. This fixes that so the user can add new-lines using the `extra` flag.
 
     args:
         text (str | None): The input string to be parsed from the terminal.
@@ -570,10 +583,11 @@ def parse_terminal_text(text: str | None) -> str | None:
 def main():
     args = parse_args()
     write_dirs = not args.no_dirs
+    no_toc = args.no_toc
     extra_section = parse_terminal_text(args.extra)
 
     course = get_user_input(write_dirs)
-    course.generate_course(write_dirs, extra_section)
+    course.generate_course(write_dirs, extra_section, no_toc)
 
 
 if __name__ == "__main__":
