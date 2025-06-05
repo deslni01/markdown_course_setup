@@ -9,129 +9,6 @@ INDEX_PAGE = 0  # for `00-` index pages
 FLASHCARDS_PAGE = 99  # for `99-` flashcard pages`
 
 
-def generate_slug(title: str) -> str:
-    """
-    Converts a title string into a filesystem friendly slug.
-
-    Args:
-      title (str): The input string to be converted into a slug.
-
-    Returns:
-      str: The slugified version of the input string.
-    """
-    return (
-        title.replace("(", "")
-        .replace(")", "")
-        .replace(" ", "_")
-        .replace(":", "_-")
-        .replace("/", "-")
-        .replace("?", "")
-        .replace("!", "")
-        .replace(",", "")
-        .replace("'", "")
-        .lower()
-    )
-
-
-def handle_title(text: str) -> str:
-    """
-    Converts a string to title case, handling cases in which the string may contain Roman numerals, as well as ensuring words such as "and", "or", "the" are not capitalized unless they are the first word.
-
-    Args:
-        str (str): The input string to be converted.
-
-    Returns:
-        str: The title-cased, Roman-numeral handled version of the input string.
-    """
-    rom_regex = re.compile(
-        r"^((?=[MDCLXVI])M*(C[MD]|D?C{0,3})(X[CL]|L?X{0,3})(I[XV]|V?I{0,3}))$",
-        re.IGNORECASE,
-    )
-
-    lower_case_words = {
-        "a",
-        "an",
-        "the",
-        "and",
-        "but",
-        "or",
-        "nor",
-        "for",
-        "so",
-        "yet",
-        "as",
-        "at",
-        "by",
-        "down",
-        "from",
-        "in",
-        "into",
-        "like",
-        "near",
-        "of",
-        "off",
-        "on",
-        "onto",
-        "out",
-        "over",
-        "past",
-        "per",
-        "to",
-        "up",
-        "upon",
-        "with",
-        "via",
-        "vs",
-    }
-
-    parts = re.split(r"(\s+)", text)
-    print(parts)
-    new_parts = []
-    for part in parts:
-        if rom_regex.match(part):
-            new_parts.append(part.upper())
-        else:
-            if part not in lower_case_words or part == parts[0]:
-                new_parts.append(part.capitalize())
-            else:
-                new_parts.append(part.lower())
-
-    return "".join(new_parts)
-
-
-def render_markdown(
-    title: str, table_of_contents: str, dates: bool = True, extra: str = "## Misc."
-) -> str:
-    """
-    Generate a markdown-file template, including YAML properties, and a table of contents.
-
-    Args:
-      title (str):
-        The title to be used in the YAML properties and the H1 header.
-      table_of_contents (str):
-        The supplied table of contents to render.
-      dates (bool):
-        If the YAML properties should have a dates, adds a `dates` list to the YAML properties.
-      extra (str):
-        Additional markdown to add, defaults to `## Misc.`.
-
-    Returns:
-      str: A markdown template.
-    """
-    return (
-        "---\n"
-        f'title: "{title}"\n'
-        "tags: []\n"
-        f"{'dates: []' if dates else ''}\n"
-        "---\n"
-        f"# {title}\n"
-        "## TOC\n"
-        f"{table_of_contents}\n"
-        "---\n"
-        f"{extra}"
-    )
-
-
 class FileGenerator:
     """
     Class for writing `MarkdownPage` objects to disk.
@@ -666,6 +543,129 @@ def parse_terminal_text(text: str | None) -> str | None:
     if text is None:
         return None
     return text.encode().decode("unicode_escape")
+
+
+def generate_slug(title: str) -> str:
+    """
+    Converts a title string into a filesystem friendly slug.
+
+    Args:
+      title (str): The input string to be converted into a slug.
+
+    Returns:
+      str: The slugified version of the input string.
+    """
+    return (
+        title.replace("(", "")
+        .replace(")", "")
+        .replace(" ", "_")
+        .replace(":", "_-")
+        .replace("/", "-")
+        .replace("?", "")
+        .replace("!", "")
+        .replace(",", "")
+        .replace("'", "")
+        .lower()
+    )
+
+
+def handle_title(text: str) -> str:
+    """
+    Converts a string to title case, handling cases in which the string may contain Roman numerals, as well as ensuring words such as "and", "or", "the" are not capitalized unless they are the first word.
+
+    Args:
+        str (str): The input string to be converted.
+
+    Returns:
+        str: The title-cased, Roman-numeral handled version of the input string.
+    """
+    rom_regex = re.compile(
+        r"^((?=[MDCLXVI])M*(C[MD]|D?C{0,3})(X[CL]|L?X{0,3})(I[XV]|V?I{0,3}))$",
+        re.IGNORECASE,
+    )
+
+    lower_case_words = {
+        "a",
+        "an",
+        "the",
+        "and",
+        "but",
+        "or",
+        "nor",
+        "for",
+        "so",
+        "yet",
+        "as",
+        "at",
+        "by",
+        "down",
+        "from",
+        "in",
+        "into",
+        "like",
+        "near",
+        "of",
+        "off",
+        "on",
+        "onto",
+        "out",
+        "over",
+        "past",
+        "per",
+        "to",
+        "up",
+        "upon",
+        "with",
+        "via",
+        "vs",
+    }
+
+    parts = re.split(r"(\s+)", text)
+    print(parts)
+    new_parts = []
+    for part in parts:
+        if rom_regex.match(part):
+            new_parts.append(part.upper())
+        else:
+            if part not in lower_case_words or part == parts[0]:
+                new_parts.append(part.capitalize())
+            else:
+                new_parts.append(part.lower())
+
+    return "".join(new_parts)
+
+
+def render_markdown(
+    title: str, table_of_contents: str, dates: bool = True, extra: str = "## Misc."
+) -> str:
+    """
+    Generate a markdown-file template, including YAML properties, and a table of contents.
+
+    Args:
+      title (str):
+        The title to be used in the YAML properties and the H1 header.
+      table_of_contents (str):
+        The supplied table of contents to render.
+      dates (bool):
+        If the YAML properties should have a dates, adds a `dates` list to the YAML properties.
+      extra (str):
+        Additional markdown to add, defaults to `## Misc.`.
+
+    Returns:
+      str: A markdown template.
+    """
+    return (
+        "---\n"
+        f'title: "{title}"\n'
+        "tags: []\n"
+        f"{'dates: []' if dates else ''}\n"
+        "---\n"
+        f"# {title}\n"
+        "## TOC\n"
+        f"{table_of_contents}\n"
+        "---\n"
+        f"{extra}"
+    )
 
 
 def main():
