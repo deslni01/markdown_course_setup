@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import argparse
 import os
+import re
 
 INDEX_PAGE = 0  # for `00-` index pages
 FLASHCARDS_PAGE = 99  # for `99-` flashcard pages`
@@ -30,6 +31,72 @@ def generate_slug(title: str) -> str:
         .replace("'", "")
         .lower()
     )
+
+
+def handle_title(text: str) -> str:
+    """
+    Converts a string to title case, handling cases in which the string may contain Roman numerals, as well as ensuring words such as "and", "or", "the" are not capitalized unless they are the first word.
+
+    Args:
+        str (str): The input string to be converted.
+
+    Returns:
+        str: The title-cased, Roman-numeral handled version of the input string.
+    """
+    rom_regex = re.compile(
+        r"^((?=[MDCLXVI])M*(C[MD]|D?C{0,3})(X[CL]|L?X{0,3})(I[XV]|V?I{0,3}))$",
+        re.IGNORECASE,
+    )
+
+    lower_case_words = {
+        "a",
+        "an",
+        "the",
+        "and",
+        "but",
+        "or",
+        "nor",
+        "for",
+        "so",
+        "yet",
+        "as",
+        "at",
+        "by",
+        "down",
+        "from",
+        "in",
+        "into",
+        "like",
+        "near",
+        "of",
+        "off",
+        "on",
+        "onto",
+        "out",
+        "over",
+        "past",
+        "per",
+        "to",
+        "up",
+        "upon",
+        "with",
+        "via",
+        "vs",
+    }
+
+    parts = re.split(r"(\s+)", text)
+    print(parts)
+    new_parts = []
+    for part in parts:
+        if rom_regex.match(part):
+            new_parts.append(part.upper())
+        else:
+            if part not in lower_case_words or part == parts[0]:
+                new_parts.append(part.capitalize())
+            else:
+                new_parts.append(part.lower())
+
+    return "".join(new_parts)
 
 
 def render_markdown(
@@ -170,7 +237,7 @@ class Section:
         """
         sec_num = f"{self.index:02d}"
 
-        sec_title = f"{self.course.short_title} - {sec_num}.{INDEX_PAGE:02d} - {self.section_title.title()}"
+        sec_title = f"{self.course.short_title} - {sec_num}.{INDEX_PAGE:02d} - {handle_title(self.section_title)}"
         return render_markdown(sec_title, self.section_toc)
 
     @property
@@ -183,13 +250,13 @@ class Section:
         """
         sec_num = f"{self.index:02d}"
 
-        flashcards_title = f"{self.course.short_title} - {sec_num}.{FLASHCARDS_PAGE} - {self.section_title.title()} Flashcards"
+        flashcards_title = f"{self.course.short_title} - {sec_num}.{FLASHCARDS_PAGE} - {handle_title(self.section_title)} Flashcards"
 
         sub_sections = []
 
         # Adds each subsection as a header in the flashcard file
         for sub_section in self.subsections:
-            sub_sections.append(f"## {sub_section.title()}\n" "\n" "\n")
+            sub_sections.append(f"## {handle_title(sub_section)}\n" "\n" "\n")
 
         sub_section_lines = "".join(sub_sections)
 
@@ -207,7 +274,11 @@ class Section:
         self.subsections.append(subsection_title)
 
     def generate_section_toc(
-        self, all_sections: list[Section], course: Course, write_dirs: bool, no_toc: bool
+        self,
+        all_sections: list[Section],
+        course: Course,
+        write_dirs: bool,
+        no_toc: bool,
     ) -> str:
         """
         Loops through the sections, creating the Obsidian-formatted markdown links for each `section`. The `subsections` of the current `section` are also generated and indented.
@@ -222,7 +293,7 @@ class Section:
             str: A section table of contents, containing each `section` and only the `subsections` of the current `section`, which are indented.
         """
         lines = [
-            f"- [[{INDEX_PAGE:02d}-{course.slug}|{course.short_title} - {course.course_title.title()}]]\n"
+            f"- [[{INDEX_PAGE:02d}-{course.slug}|{course.short_title} - {handle_title(course.course_title)}]]\n"
         ]
         for sec_idx, section in enumerate(all_sections, start=1):
             slug = generate_slug(section.section_title)
@@ -233,7 +304,7 @@ class Section:
                 lines.append(
                     f"- [[{INDEX_PAGE:02d}-{slug}|"
                     f"{course.short_title} - {num}.{INDEX_PAGE:02d} "
-                    f"- {section.section_title.title()}]]\n"
+                    f"- {handle_title(section.section_title)}]]\n"
                 )
                 # Adds and indents all subsections of current section
                 if section is self:
@@ -243,13 +314,13 @@ class Section:
                         sub_num = f"{sub_idx:02d}"
                         lines.append(
                             f"\t- [[{sub_num}-{sub_slug}|"
-                            f"{course.short_title} - {sec_num}.{sub_num} - {subsection.title()}]]\n"
+                            f"{course.short_title} - {sec_num}.{sub_num} - {handle_title(subsection)}]]\n"
                         )
 
                     section_flashcard_file = (
                         f"\t- [[{FLASHCARDS_PAGE}-flashcards_{slug}|"
                         f"{course.short_title} - {num}.{FLASHCARDS_PAGE} "
-                        f"- {self.section_title.title()} Flashcards]]\n"
+                        f"- {handle_title(self.section_title)} Flashcards]]\n"
                     )
                     lines.append(section_flashcard_file)
 
@@ -259,13 +330,18 @@ class Section:
                     lines.append(
                         f"- [[{sec_idx:02d}-{slug}|"
                         f"{course.short_title} - {sec_idx:02d} "
-                        f"- {section.section_title.title()}]]\n"
+                        f"- {handle_title(section.section_title)}]]\n"
                     )
 
         return "".join(lines)
 
     def generate_dir_and_markdown_files(
-        self, index: int, course: Course, write_dirs: bool, extra_section: str, no_toc: bool
+        self,
+        index: int,
+        course: Course,
+        write_dirs: bool,
+        extra_section: str,
+        no_toc: bool,
     ) -> None:
         """
         - Creates the TOC for the `section`, and the `outdir` for the course and `section`.
@@ -315,14 +391,14 @@ class Section:
             for index, sub_section in enumerate(self.subsections, start=1):
                 sub_num = f"{self.index:02d}.{index:02d}"
 
-                sub_title = (
-                    f"{self.course.short_title} - {sub_num} - {sub_section.title()}"
-                )
+                sub_title = f"{self.course.short_title} - {sub_num} - {handle_title(sub_section)}"
 
                 if extra_section:
                     sub_extra_headers = extra_section
                 else:
-                    sub_extra_headers = "## Key Points/Concepts\n\n## Lecture\n\n## Misc."
+                    sub_extra_headers = (
+                        "## Key Points/Concepts\n\n## Lecture\n\n## Misc."
+                    )
 
                 sub_template: str = render_markdown(
                     sub_title, self.section_toc, extra=sub_extra_headers
@@ -352,7 +428,7 @@ class Section:
             else:
                 section_outline = "## Key Points/Concepts\n\n## Lecture\n\n## Misc."
 
-            section_title = f"{self.course.short_title} - {self.index:02d} - {self.section_title.title()}"
+            section_title = f"{self.course.short_title} - {self.index:02d} - {handle_title(self.section_title)}"
             slug = self.slug
             sub_template: str = render_markdown(
                 section_title, self.section_toc, extra=section_outline
@@ -426,10 +502,10 @@ class Course:
             str: Markdown containing the main course YAML information, headers, and a table of contents with each `section` and all `subsections` (indented under their parent `section`).
         """
 
-        title = f"{self.short_title} - {self.course_title.title()}"
+        title = f"{self.short_title} - {handle_title(self.course_title)}"
 
         lines = [
-            f"- [[{INDEX_PAGE:02d}-{self.slug}|{self.short_title} - {self.course_title.title()}]]\n"
+            f"- [[{INDEX_PAGE:02d}-{self.slug}|{self.short_title} - {handle_title(self.course_title)}]]\n"
         ]
 
         for sec_idx, section in enumerate(self.sections, start=1):
@@ -440,7 +516,7 @@ class Course:
                 lines.append(
                     f"- [[{INDEX_PAGE:02d}-{sec_slug}|"
                     f"{self.short_title} - {sec_num}.{INDEX_PAGE:02d} "
-                    f"- {section.section_title.title()}]]\n"
+                    f"- {handle_title(section.section_title)}]]\n"
                 )
                 # indent all subsections
                 for sub_idx, subsection in enumerate(section.subsections, start=1):
@@ -449,20 +525,21 @@ class Course:
                     sub_num = f"{sub_idx:02d}"
                     lines.append(
                         f"\t- [[{sub_num}-{sub_slug}|"
-                        f"{self.short_title} - {sec_num}.{sub_num} - {subsection.title()}]]\n"
+                        f"{self.short_title} - {sec_num}.{sub_num} - {handle_title(subsection)}]]\n"
                     )
 
                 section_flashcard_file = (
                     f"\t- [[{FLASHCARDS_PAGE}-flashcards_{sec_slug}|"
                     f"{self.short_title} - {sec_num}.{FLASHCARDS_PAGE} "
-                    f"- {section.section_title.title()} Flashcards]]\n"
+                    f"- {handle_title(section.section_title)} Flashcards]]\n"
                 )
                 lines.append(section_flashcard_file)
             else:
                 lines.append(
                     f"- [[{sec_idx:02d}-{sec_slug}|"
                     f"{self.short_title} - {sec_idx:02d} "
-                    f"- {section.section_title.title()}]]\n"
+                    # f"- {section.section_title.title()}]]\n"
+                    f"- {handle_title(section.section_title)}]]\n"
                 )
 
         table_of_contents = "".join(lines)
@@ -483,7 +560,13 @@ class Course:
             )
         return os.path.join(os.getcwd(), self.slug)
 
-    def generate_sections(self, sections: list[Section], write_dirs: bool, extra_section: str, no_toc: bool) -> None:
+    def generate_sections(
+        self,
+        sections: list[Section],
+        write_dirs: bool,
+        extra_section: str,
+        no_toc: bool,
+    ) -> None:
         """
         Iterates of the course `sections`, calling `generate_dir_and_markdown_files` for each `section` to create all directories and files.
 
@@ -492,7 +575,9 @@ class Course:
                 The list of `Section` objects within the `Course`.
         """
         for index, section in enumerate(sections, start=1):
-            section.generate_dir_and_markdown_files(index, self, write_dirs, extra_section, no_toc)
+            section.generate_dir_and_markdown_files(
+                index, self, write_dirs, extra_section, no_toc
+            )
 
     def generate_course(self, write_dirs: bool, extra_section, no_toc: bool) -> None:
         """
@@ -536,6 +621,7 @@ def get_user_input(write_dirs: bool) -> Course:
 
     return course
 
+
 def parse_args() -> argparse.Namespace:
     """
     Argparse handler to bundle up all the command-line arguments.
@@ -559,7 +645,7 @@ def parse_args() -> argparse.Namespace:
         "-e",
         "--extra",
         help="Pass in a string in markdown format to over-ride the additional formatting of the subsection files. When --no-dirs also flagged, this will over-ride the additional formatting of the section files. Note: best used with single quotes rather than double quotes to avoid any escaping issues present in the terminal.",
-        type=str
+        type=str,
     )
 
     args = parser.parse_args()
@@ -568,6 +654,7 @@ def parse_args() -> argparse.Namespace:
         parser.error("The --no-toc flag can only be used with --no-dirs.")
 
     return args
+
 
 def parse_terminal_text(text: str | None) -> str | None:
     """
@@ -579,6 +666,7 @@ def parse_terminal_text(text: str | None) -> str | None:
     if text is None:
         return None
     return text.encode().decode("unicode_escape")
+
 
 def main():
     args = parse_args()
