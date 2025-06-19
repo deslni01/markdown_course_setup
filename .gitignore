@@ -2,4 +2,4 @@ refactor.md
 /env
 /.mypy_cache
 /.pytest_cache
-/__pycache__
+__pycache__/
