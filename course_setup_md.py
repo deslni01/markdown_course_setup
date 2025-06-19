@@ -471,8 +471,20 @@ def get_user_input(write_dirs: bool) -> Course:
         Course: A `Course` instance created from user inputs.
     """
 
-    course_number = input("Enter the course number (leave blank if no course number): ")
-    course_title = input("Enter the course title: ").strip()
+    while True:
+        course_number = input("Enter the course number (leave blank if no course number): ").strip()
+        try:
+            course_number = int(course_number) if course_number else None
+            break
+        except ValueError:
+            print("Invalid course number. Please enter a valid integer or leave it blank.")
+
+    while True:
+        course_title = input("Enter the course title: ").strip()
+        if course_title:
+            break
+        print("Course title cannot be empty. Please enter a valid course title.")
+
     short_title = input("Enter the short-form title (case-sensitive): ").strip()
     course = Course(course_title, short_title, course_number)
 
