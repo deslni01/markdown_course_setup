@@ -238,6 +238,8 @@ class Section:
         )
 
         if write_dirs:
+            # make review dir
+            os.makedirs(f"{course.output_dir}/{index:02d}-{self.slug}/100-review_files/", exist_ok=True)
             outdir = f"{course.output_dir}/{index:02d}-{self.slug}"
 
             section_index_file: MarkdownPage = MarkdownPage(
@@ -274,7 +276,7 @@ class Section:
                     sub_extra_headers = extra_section
                 else:
                     sub_extra_headers = (
-                        "## Key Points/Concepts\n\n## Lecture\n\n## Misc."
+                        "# Key Points/Concepts\n\n# Lecture\n\n# Misc."
                     )
 
                 sub_template: str = render_markdown(
@@ -289,6 +291,7 @@ class Section:
                 FileGenerator.create_markdown_file(sub_section_page, outdir)
         else:
             outdir = f"{course.output_dir}"
+            os.makedirs(f"{course.output_dir}/100-review_files/", exist_ok=True)
 
             course_index_file: MarkdownPage = MarkdownPage(
                 course.course_title,
@@ -301,7 +304,7 @@ class Section:
             if extra_section:
                 section_outline = extra_section
             else:
-                section_outline = "## Key Points/Concepts\n\n## Lecture\n\n## Misc."
+                section_outline = "# Key Points/Concepts\n\n# Lecture\n\n# Misc."
 
             section_title = f"{self.course.short_title} - {self.index:02d} - {handle_title(self.section_title)}"
             slug = self.slug
