@@ -238,6 +238,8 @@ class Section:
         )
 
         if write_dirs:
+            # make review dir
+            os.makedirs(f"{course.output_dir}/{index:02d}-{self.slug}/100-review_files/", exist_ok=True)
             outdir = f"{course.output_dir}/{index:02d}-{self.slug}"
 
             section_index_file: MarkdownPage = MarkdownPage(
@@ -287,6 +289,8 @@ class Section:
                     sub_section, slug, sub_template, filename
                 )
                 FileGenerator.create_markdown_file(sub_section_page, outdir)
+                # make review dir
+                os.makedirs(f"{outdir}/100-review_files/{index:02d}-{slug}/", exist_ok=True)
         else:
             outdir = f"{course.output_dir}"
 
