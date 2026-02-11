@@ -1,0 +1,12 @@
+- [ ] Refactor
+	- Take a fresh look now that we've done some OOAD stuff
+	- Brainstorm the process - define the problem, identify classes, responsibilities, possible patterns to use
+		- eg can/should I use Builder? etc
+	- Map to UML
+	- Code
+- [ ] Add ability to add to an existing course
+	- Read existing course structure/import existing files
+	- Determine where to add something
+	- Determine what to add
+	- Change order of file names, TOC for all items in course
+	- Write to files
