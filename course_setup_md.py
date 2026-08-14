@@ -156,6 +156,7 @@ class Section:
         course: Course,
         write_dirs: bool,
         no_toc: bool,
+        wikilinks: bool,
     ) -> str:
         """
         Loops through the sections, creating the Obsidian-formatted markdown links for each `section`. The `subsections` of the current `section` are also generated and indented.
@@ -165,50 +166,99 @@ class Section:
                 The list of all sections from the instantiated `Course` object.
             course (Course):
                 A reference to the current `Course` object.
+            write_dirs (bool):
+                If `True`, the TOC will contain links to the `subsections` of the current section.
+            no_toc (bool):
+                If `True`, the TOC will not be generated for the section files.
+            wikilinks (bool):
+                If `True`, the TOC will use Obsidian-style wikilinks instead of Markdown-style links.
 
         Returns:
             str: A section table of contents, containing each `section` and only the `subsections` of the current `section`, which are indented.
         """
-        lines = [
-            f"- [[{INDEX_PAGE:02d}-{course.slug}|{course.short_title} - {handle_title(course.course_title)}]]\n"
-        ]
+        # Generate course index link
+        # lines = [
+            # f"- [[{INDEX_PAGE:02d}-{course.slug}|{course.short_title} - {handle_title(course.course_title)}]]\n"
+        # ]
+        lines = []
+        index_url = f"{INDEX_PAGE:02d}-{course.slug}"
+        index_text = f"{course.short_title} - {handle_title(course.course_title)}"
+
+        if wikilinks:
+            # lines.append(f"- [[{INDEX_PAGE:02d}-{course.slug}|{course.short_title} - {handle_title(course.course_title)}]]\n")
+            lines.append(f"- [[{index_url}|{index_text}]]\n")
+
+        else:
+            # lines.append(f"- [{course.short_title} - {handle_title(course.course_title)}](../{INDEX_PAGE:02d}-{course.slug})")
+            lines.append(f"- [{index_text}](../{index_url}.md)\n")
+
+        # Generate section links and indented subsection links
         for sec_idx, section in enumerate(all_sections, start=1):
             slug = generate_slug(section.section_title)
             num = f"{sec_idx:02d}"
+            index_url = f"{INDEX_PAGE:02d}-{slug}"
+            index_text = f"{course.short_title} - {num}.{INDEX_PAGE:02d} - {handle_title(section.section_title)}"
+            section_path = f"{num}-{slug}"
 
             if write_dirs:
                 # Adds a link for each section
-                lines.append(
-                    f"- [[{INDEX_PAGE:02d}-{slug}|"
-                    f"{course.short_title} - {num}.{INDEX_PAGE:02d} "
-                    f"- {handle_title(section.section_title)}]]\n"
-                )
+                if wikilinks:
+                    lines.append(
+                        f"- [[{index_url}|{index_text}]]\n"
+                    )
+                else:
+                    if section is self:
+                        lines.append(
+                            f"- [{index_text}]({index_url}.md)\n"
+                        )
+                    else:
+                        lines.append(
+                            f"- [{index_text}](../{section_path}/{index_url}.md)\n"
+                        )
+
                 # Adds and indents all subsections of current section
                 if section is self:
                     for sub_idx, subsection in enumerate(self.subsections, start=1):
                         sub_slug = generate_slug(subsection)
-                        sec_num = f"{sec_idx:02d}"
                         sub_num = f"{sub_idx:02d}"
-                        lines.append(
-                            f"\t- [[{sub_num}-{sub_slug}|"
-                            f"{course.short_title} - {sec_num}.{sub_num} - {handle_title(subsection)}]]\n"
-                        )
+                        sub_url = f"{sub_num}-{sub_slug}"
+                        sub_text = f"{course.short_title} - {num}.{sub_num} - {handle_title(subsection)}"
+                        if wikilinks:
+                            lines.append(
+                                f"\t- [[{sub_url}|{sub_text}\n"
+                            )
+                        else:
+                            lines.append(
+                                f"\t- [{sub_text}]({sub_url}.md)\n"
+                            )
 
-                    section_flashcard_file = (
-                        f"\t- [[{FLASHCARDS_PAGE}-flashcards_{slug}|"
-                        f"{course.short_title} - {num}.{FLASHCARDS_PAGE} "
-                        f"- {handle_title(self.section_title)} Flashcards]]\n"
-                    )
+                    flashcard_url = f"{FLASHCARDS_PAGE}-flashcards_{slug}"
+                    flashcard_title = f"{course.short_title} - {num}.{FLASHCARDS_PAGE} - {handle_title(self.section_title)}"
+
+                    if wikilinks:
+                        section_flashcard_file = (
+                            f"\t- [[{flashcard_url}|{flashcard_title} Flashcards]]\n"
+                        )
+                    else:
+                        section_flashcard_file = (
+                            f"\t- [{flashcard_title} Flashcards]({flashcard_url}.md)\n"
+                        )
                     lines.append(section_flashcard_file)
 
             else:
                 if not no_toc:
                     # Adds a link for each section
-                    lines.append(
-                        f"- [[{sec_idx:02d}-{slug}|"
-                        f"{course.short_title} - {sec_idx:02d} "
-                        f"- {handle_title(section.section_title)}]]\n"
-                    )
+                    section_url = f"{num}-{slug}"
+                    section_text = f"{course.short_title} - {num} - {handle_title(section.section_title)}"
+
+                    if wikilinks:
+                        lines.append(
+                            f"- [[{section_url}|{section_text}]]\n"
+                        )
+                    else:
+                        lines.append(
+                            f"- [{section_text}]({section_url}.md)\n"
+                        )
 
         return "".join(lines)
 
@@ -219,6 +269,7 @@ class Section:
         write_dirs: bool,
         extra_section: str,
         no_toc: bool,
+        wikilinks: bool
     ) -> None:
         """
         - Creates the TOC for the `section`, and the `outdir` for the course and `section`.
@@ -234,7 +285,7 @@ class Section:
         self.index = index  # store section index on the fly
 
         self.section_toc: str = self.generate_section_toc(
-            course.sections, course, write_dirs, no_toc
+            course.sections, course, write_dirs, no_toc, wikilinks
         )
 
         if write_dirs:
@@ -374,9 +425,9 @@ class Course:
             f"***Folder Name:{self.slug}"
         )
 
-    def generate_course_template(self, write_dirs: bool) -> str:
+    def generate_course_template(self, write_dirs: bool, wikilinks: bool) -> str:
         """
-        Generates the `title` and `table_of_contents` for the `course` index file.
+        Generates the `title` and `table_of_contents` for the `course` index file, ie the main course page.
 
         Returns:
             str: Markdown containing the main course YAML information, headers, and a table of contents with each `section` and all `subsections` (indented under their parent `section`).
@@ -384,42 +435,80 @@ class Course:
 
         title = f"{self.short_title} - {handle_title(self.course_title)}"
 
-        lines = [
-            f"- [[{INDEX_PAGE:02d}-{self.slug}|{self.short_title} - {handle_title(self.course_title)}]]\n"
-        ]
+        lines = []
+        index_url = f"{INDEX_PAGE:02d}-{self.slug}"
+        index_text = f"{self.short_title} - {handle_title(self.course_title)}"
+
+        if wikilinks:
+            lines.append(f"- [[{index_url}|{index_text}]]\n")
+        else:
+            lines.append(f"- [{index_text}]({index_url}.md)\n")
 
         for sec_idx, section in enumerate(self.sections, start=1):
             sec_slug: str = generate_slug(section.section_title)
             sec_num = f"{sec_idx:02d}"
+            section_index_url = f"{INDEX_PAGE:02d}-{sec_slug}"
+            section_index_text = f"{self.short_title} - {sec_num}.{INDEX_PAGE:02d} - {handle_title(section.section_title)}"
+            section_path = f"{sec_num}-{sec_slug}"
 
             if write_dirs:
-                lines.append(
-                    f"- [[{INDEX_PAGE:02d}-{sec_slug}|"
-                    f"{self.short_title} - {sec_num}.{INDEX_PAGE:02d} "
-                    f"- {handle_title(section.section_title)}]]\n"
-                )
-                # indent all subsections
+                # link for each section
+                if wikilinks:
+                    lines.append(
+                        f"- [[{section_index_url}|{section_index_text}]]\n"
+                    )
+                else:
+                    if section is self:
+                        lines.append(f"- [{section_index_text}](./{section_index_url}.md)\n")
+                    else:
+                        lines.append(f"- [{section_index_text}](./{section_path}/{section_index_url}.md)\n")
+
+                # add and indent all subsections
                 for sub_idx, subsection in enumerate(section.subsections, start=1):
                     sub_slug: str = generate_slug(subsection)
                     sec_num = f"{sec_idx:02d}"
                     sub_num = f"{sub_idx:02d}"
-                    lines.append(
-                        f"\t- [[{sub_num}-{sub_slug}|"
-                        f"{self.short_title} - {sec_num}.{sub_num} - {handle_title(subsection)}]]\n"
-                    )
+
+                    if wikilinks:
+                        lines.append(
+                            f"\t- [[{sub_num}-{sub_slug}|"
+                            f"{self.short_title} - {sec_num}.{sub_num} - {handle_title(subsection)}]]\n"
+                        )
+                    # does this need relative pathing? ../?
+                    else:
+                        lines.append(
+                            f"\t- [{self.short_title} - {sec_num}.{sub_num} - {handle_title(subsection)}]"
+                            f"(./{section_path}/{sub_num}-{sub_slug}.md)\n"
+                        )
+
 
                 section_flashcard_file = (
                     f"\t- [[{FLASHCARDS_PAGE}-flashcards_{sec_slug}|"
                     f"{self.short_title} - {sec_num}.{FLASHCARDS_PAGE} "
                     f"- {handle_title(section.section_title)} Flashcards]]\n"
                 )
-                lines.append(section_flashcard_file)
+
+                if wikilinks:
+                    lines.append(section_flashcard_file)
+                # does this need relative pathing? ../?
+                else:
+                    lines.append(
+                        f"\t- [{self.short_title} - {sec_num}.{FLASHCARDS_PAGE} - {handle_title(section.section_title)} Flashcards]"
+                        f"(./{section_path}/{FLASHCARDS_PAGE}-flashcards_{sec_slug}.md)\n"
+                    )
             else:
-                lines.append(
-                    f"- [[{sec_idx:02d}-{sec_slug}|"
-                    f"{self.short_title} - {sec_idx:02d} "
-                    f"- {handle_title(section.section_title)}]]\n"
-                )
+                if wikilinks:
+                    lines.append(
+                        f"- [[{sec_idx:02d}-{sec_slug}|"
+                        f"{self.short_title} - {sec_idx:02d} "
+                        f"- {handle_title(section.section_title)}]]\n"
+                    )
+                else:
+                    # does this need relative pathing? ../?
+                    lines.append(
+                        f"- [{self.short_title} - {sec_idx:02d} - {handle_title(section.section_title)}]"
+                        f"(./{section_path}/{sec_idx:02d}-{sec_slug}.md)\n"
+                    )
 
         table_of_contents = "".join(lines)
 
@@ -445,6 +534,7 @@ class Course:
         write_dirs: bool,
         extra_section: str,
         no_toc: bool,
+        wikilinks: bool
     ) -> None:
         """
         Iterates of the course `sections`, calling `generate_dir_and_markdown_files` for each `section` to create all directories and files.
@@ -455,16 +545,16 @@ class Course:
         """
         for index, section in enumerate(sections, start=1):
             section.generate_dir_and_markdown_files(
-                index, self, write_dirs, extra_section, no_toc
+                index, self, write_dirs, extra_section, no_toc, wikilinks
             )
 
-    def generate_course(self, write_dirs: bool, extra_section, no_toc: bool) -> None:
+    def generate_course(self, write_dirs: bool, extra_section, no_toc: bool, wikilinks: bool) -> None:
         """
         Sets up course fields for `slug` and `course_template`, then calls `generate_sections()` to create the files.
         """
         self.slug: str = generate_slug(self.course_title)
-        self.course_template: str = self.generate_course_template(write_dirs)
-        self.generate_sections(self.sections, write_dirs, extra_section, no_toc)
+        self.course_template: str = self.generate_course_template(write_dirs, wikilinks)
+        self.generate_sections(self.sections, write_dirs, extra_section, no_toc, wikilinks)
 
 
 def get_user_input(write_dirs: bool) -> Course:
@@ -524,7 +614,7 @@ def parse_args() -> argparse.Namespace:
         "-n",
         "--no-dirs",
         help="To create section markdown files rather than section folders, indices, flashcards, and subsection files.",
-        action="store_true",
+        action="store_true", # defaults to False, switches to True if flagged
     )
     parser.add_argument(
         "-t",
@@ -537,6 +627,13 @@ def parse_args() -> argparse.Namespace:
         "--extra",
         help="Pass in a string in markdown format to over-ride the additional formatting of the subsection files. When --no-dirs also flagged, this will over-ride the additional formatting of the section files. Note: best used with single quotes rather than double quotes to avoid any escaping issues present in the terminal.",
         type=str,
+    )
+    parser.add_argument(
+        "-w",
+        "--wikilinks",
+        help="To use Obsidian-style wikilink formatting for the table of contents. " \
+        "eg `[[01-Section|Short Title - 01 - Section Name]]` rather than Markdown-style links, eg `[Short Title -01 - Section Name](01-Section.md)`",
+        action="store_true",
     )
 
     args = parser.parse_args()
@@ -685,10 +782,11 @@ def main():
     args = parse_args()
     write_dirs = not args.no_dirs
     no_toc = args.no_toc
+    wikilinks = args.wikilinks
     extra_section = parse_terminal_text(args.extra)
 
     course = get_user_input(write_dirs)
-    course.generate_course(write_dirs, extra_section, no_toc)
+    course.generate_course(write_dirs, extra_section, no_toc, wikilinks)
 
 
 if __name__ == "__main__":

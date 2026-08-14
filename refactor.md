@@ -1,30 +1,70 @@
+# New Refactorization
+
+- Let's apply some OO analysis and design, principles, patterns here.
+
+## Analysis
+
+- For starters, need to do some analysis
+- What's the problem?
+  - The user should be able to create a course markdown setup that mimics a real-life course.
+  - The application should create a folder structure in numerical order representing each section, as well as subfolders for each subsection.
+    - But ability to not create subfolders for subsections, as some courses may have too many
+    - It should also create markdown files within each subsection for each topic
+    - Each markdown file should have a table of contents created that links via appropriate Obsidian-style linking to other files within the course
+      - The main-course markdown file should have an expanded table of contents with all sections/subsections, but others should only have subsections expanded for their respective section
+  - It should be possible to edit all of the table of contents for an existing course, to eg change names, correct typos, etc.
+  - It should also be possible to add additional files, sections, subsections to existing courses in the appropriate folder/file structure, as well as update all existing markdown files' table of contents
+
+## Use-cases
+
+- What are the use-cases?
+- Maybe make a UML use-case diagram
+- Creating a new course
+  - fill out
+- Creating a new course with a ton of sections
+  - fill out
+- Changing/editing existing courses
+  - fill out
+- Adding to existing courses
+  - fill out
+
+## Classes
+
+- Looking at the analysis and use-cases, we can start creating some classes.
+- What are our classes? Add to a UML diagram
+
+## Responsibilities
+
+- What are the responsibilities? Add to a UML diagram
+
+## Class Relationships
+
+- What relationships do the classes have? Add to a UML diagram
+
+---
+
 Todo:
 
 - [x] Minor bugs/odd naming issues:
-
   - Roman numerals in title case (e.g. "II" becomes "Ii")
   - Conjunctions - "Children's" when entered becomes "Children'S", "Don't" becomes "Don'T", etc.
   - ALL words are currently capitalized, e.g. "The", "Of", etc.
 
 - [ ] So... just came across an issue that could be a pain in the arse. While putting in episodes of the Norwegian for Beginners podcast, I realize I had a few typos - but I entered 56 titles, and since each file has a TOC linking to each file, that means _every file_ has typos in it - it isn't as simple as changing the singular file with the typo!
-
   - So.. how about a secondary script to open a dir, loop through the contents, find the supplied string to search for, and replace with the supplied swap string? Would want to maybe pass in bulk options, because there will likely be more than one typo, and I'd hate to have to run it multiple times, right?
   - And how to handle case issues? e.g. say I have "Cujisine", but obviously want it to be "Cuisine" - I'd either have to earch for "ujisine" and swap with "uisine", or figure out how to implement a way to do an insensitive "cuisine", but keep the existing capitalization...
   - Hmm.
 
 - [ ] Similar to the one below, I suppose - what if we want to add to an existing course? Need to be able to do the following:
-
   - Mark if entries to an existing course,
   - Select what number to 'start' at,
   - Append new entries to existing TOCs
     - Would need to do the `00-index-file` for the course, then loop through each folder to get section `00-index-files`, `99-flashcard-files`, and all other files in the section... oofda
 
 - [x] And in a similar fashion - what if we want to add to an existing setup? e.g. say we have 50 episodes, and tomorrow a 51st episode comes out - we'd have to manually add the new episode to all 50 existing files, plus the course index file! There has to be a better way - so we need a script to amend/edit existing TOCs...
-
   - Well, to that point, I'm looking at the current TOC of a 50-episode test I just did, and that's a long TOC in each file.. so maybe we completely change it to NOT add a TOC to each section file when doing `-nd` (add to the course index file, and each section would then have a singular link to that index file)? Or do we make this another optional flag to toggle this as an option?
 
 - [ ] What about the ability to feed in a text file and process using those contents?
-
   - would need to figure out how to indicate section vs subsection, though...
   - indentation? if it's indented, it's subsection? then can parse the first few lines - first line if a number is the course number, then course name, then short name, then sections and indented sections?
   - I wonder about making that a 'module' and in `main` doing the arg where if it's present then it can do it? is it possible to load a module on the fly, as in make it optional? e.g. `from modulename import function if not None` or something?
@@ -33,7 +73,6 @@ Todo:
 - [x] Similarly, what about a method to not make each `section` a new dir with subsections, index, and flashcards? Maybe just have each `section` just be a file? So think episodes for the podcast, right? Something small and contained, where I can put all the notes and vocab in the one doc?
 
 - [ ] So I think we add a few optional flags using `argparse`!
-
   - [x]`--extra/-e <str>` to add in a string to replace the `extra` - or make this add an extra `input` rather than doing it in the command line?
   - [x]`--no-subs/-ns` to not include `subsections` or `dir` for each `section` - just have the `section` be a singular markdown file.
   - [ ] `--dry-run/-d` to not actually build the files, but output a list of formatted directories and files

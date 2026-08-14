@@ -1,4 +1,13 @@
-from course_setup_md import handle_title, get_user_input, parse_args, parse_terminal_text, generate_slug, render_markdown, Course, Section
+from course_setup_md import (
+  Course,
+  Section,
+  generate_slug,
+  get_user_input,
+  handle_title,
+  parse_args,
+  parse_terminal_text,
+  render_markdown,
+)
 
 
 # Test cases for handle_title function
@@ -76,7 +85,6 @@ def test_get_user_input_course_number_invalid(monkeypatch):
   course = get_user_input(write_dirs=True)
   assert isinstance(course, Course)
   assert course.course_number == 1
-
 
 
 # parse args function test cases

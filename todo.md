@@ -1,12 +1,16 @@
 - [ ] Refactor
-	- Take a fresh look now that we've done some OOAD stuff
-	- Brainstorm the process - define the problem, identify classes, responsibilities, possible patterns to use
-		- eg can/should I use Builder? etc
-	- Map to UML
-	- Code
+  - Take a fresh look now that we've done some OOAD stuff
+  - Brainstorm the process - define the problem, identify classes, responsibilities, possible patterns to use
+    - eg can/should I use Builder? etc
+  - Map to UML
+  - Code
 - [ ] Add ability to add to an existing course
-	- Read existing course structure/import existing files
-	- Determine where to add something
-	- Determine what to add
-	- Change order of file names, TOC for all items in course
-	- Write to files
+  - Read existing course structure/import existing files
+  - Determine where to add something
+  - Determine what to add
+  - Change order of file names, TOC for all items in course
+  - Write to files
+- [ ] Add ability to do course-wide regex edits to eg replace typos, issues, etc
+  - eg `- [[00-into_to_information_security|JCA-1 - Into to Information Security]]` has a type
+  - so run the editor to replace to `- [[00-intro_to_information_security|JCA-1 - Intro to Information Security]]` for all files
+- [ ] Need to change how some files are named, to prevent duplication (eg final, flashcards?)
