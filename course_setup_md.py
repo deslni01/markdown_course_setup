@@ -272,13 +272,19 @@ class Section:
                     if wikilinks:
                         lines.append(
                             f"- [[{section_url}|{section_text}]]\n"
-                            f"\t- [[{flashcard_url}|{flashcard_text}]]\n"
                         )
+                        if section is self:
+                            lines.append(
+                                f"\t- [[{flashcard_url}|{flashcard_text}]]\n"
+                            )
                     else:
                         lines.append(
                             f"- [{section_text}]({section_url}.md)\n"
-                            f"\t- [{flashcard_text}](./100-review_files/{num}-{slug}/{flashcard_url}.md)\n"
                         )
+                        if section is self:
+                            lines.append(
+                                f"\t- [{flashcard_text}](./100-review_files/{num}-{slug}/{flashcard_url}.md)\n"
+                            )
 
         return "".join(lines)
 
