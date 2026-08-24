@@ -9,15 +9,9 @@ INDEX_PAGE = 0  # for `00-` index pages
 FLASHCARDS_PAGE = 99  # for `99-` flashcard pages`
 
 
-# OK need to fix the following:
-    # when using `-n` flag, so no separate folders per section/subsection, the main TOC is formatted wrong
-        # it has eg `./section/section.md` rather than just `section.md` for the links
-    # the other section pages are able to move to each other just fine but link to index incorrectly
-        # they have `../00-index-file.md` rather than just `00-index-file.md`
-    # no flashcard file generated... but not sure how best to do that - one per section? so add to the `/100-review_files` folder something like `03-aws_elastic_flashcards.md`?
-
-# those are done
-    # need to also add flashcard links for non-subsection runs, but only on the section pages
+# TODO
+    # fix title logic to leave upper-case as-is? eg "AWS" shouldn't become "Aws"
+    # and could do a lot of refactoring, lmao
 
 
 class FileGenerator:
@@ -43,6 +37,7 @@ class FileGenerator:
         file_path: str = out_dir + "/" + markdown_page.filename
         output_file: Path = Path(file_path)
         output_file.parent.mkdir(parents=True, exist_ok=True)
+        print(f"Creating file: {output_file}")
         with open(output_file, "w") as file:
             file.write(markdown_page.template)
 
@@ -313,6 +308,7 @@ class Section:
         self.section_toc: str = self.generate_section_toc(
             course.sections, course, write_dirs, no_toc, wikilinks
         )
+        index_outdir = f"{course.output_dir}/"
 
         if write_dirs:
             # make review dir
@@ -342,7 +338,7 @@ class Section:
 
             FileGenerator.create_markdown_file(section_index_file, outdir)
             FileGenerator.create_markdown_file(section_flashcard_file, outdir)
-            FileGenerator.create_markdown_file(course_index_file, outdir)
+            FileGenerator.create_markdown_file(course_index_file, index_outdir)
 
             for index, sub_section in enumerate(self.subsections, start=1):
                 sub_num = f"{self.index:02d}.{index:02d}"
@@ -393,7 +389,7 @@ class Section:
                 f"{FLASHCARDS_PAGE}-flashcards_{self.slug}.md",
             )
 
-            FileGenerator.create_markdown_file(course_index_file, outdir)
+            FileGenerator.create_markdown_file(course_index_file, index_outdir)
             FileGenerator.create_markdown_file(section_flashcard_file, review_dir)
 
             if extra_section:
